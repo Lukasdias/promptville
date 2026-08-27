@@ -1,22 +1,59 @@
 import { useMemo } from "react";
 import { createNoise3D } from "simplex-noise";
-import type { PlacedBlock } from "../../layout";
+import { ROAD_WIDTH, type PlacedBlock, type Street } from "../../layout";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { MOUNTAIN_COLOR, SNOW_COLOR } from "../../voxel";
 
 const NOISE_SCALE = 0.035;
 const MAX_HEIGHT = 22;
-export const MOUNTAIN_INNER_GAP = 14;
+// Clearance from the furthest street corner to the mountain's inner edge, so the
+// terrain never buries a road.
+const INNER_MARGIN = 4;
 export const MOUNTAIN_BAND_WIDTH = 30;
 
-export function mountainOuterRadius(blocks: PlacedBlock[]): number {
-  if (blocks.length === 0) return 0;
+interface MountainRing {
+  cx: number;
+  cz: number;
+  innerR: number;
+  outerR: number;
+}
+
+// The mountain band must start past every street (including ring corners), which
+// sit on the city's diagonal. Computes the inner radius from the actual streets,
+// or from the block-bounds diagonal when no street list is available.
+export function mountainRing(blocks: PlacedBlock[], streets?: Street[]): MountainRing | null {
+  if (blocks.length === 0) return null;
   const minX = Math.min(...blocks.map((b) => b.x - b.width / 2));
   const maxX = Math.max(...blocks.map((b) => b.x + b.width / 2));
   const minZ = Math.min(...blocks.map((b) => b.z - b.depth / 2));
   const maxZ = Math.max(...blocks.map((b) => b.z + b.depth / 2));
-  const cityR = Math.max(maxX - minX, maxZ - minZ) / 2;
-  return cityR + MOUNTAIN_INNER_GAP + MOUNTAIN_BAND_WIDTH;
+  const cx = (minX + maxX) / 2;
+  const cz = (minZ + maxZ) / 2;
+  const cityHalfX = (maxX - minX) / 2;
+  const cityHalfZ = (maxZ - minZ) / 2;
+
+  let maxStreetDist = 0;
+  if (streets && streets.length > 0) {
+    for (const s of streets) {
+      if (s.width >= s.depth) {
+        const d = Math.hypot(Math.max(Math.abs(s.x - cx) + s.width / 2, 0), Math.abs(s.z - cz));
+        maxStreetDist = Math.max(maxStreetDist, d);
+      } else {
+        const d = Math.hypot(Math.abs(s.x - cx), Math.max(Math.abs(s.z - cz) + s.depth / 2, 0));
+        maxStreetDist = Math.max(maxStreetDist, d);
+      }
+    }
+  } else {
+    // Fallback: block-bounds diagonal + the ring road width covers the corners.
+    maxStreetDist = Math.hypot(cityHalfX + ROAD_WIDTH, cityHalfZ + ROAD_WIDTH);
+  }
+
+  const innerR = maxStreetDist + INNER_MARGIN;
+  return { cx, cz, innerR, outerR: innerR + MOUNTAIN_BAND_WIDTH };
+}
+
+export function mountainOuterRadius(blocks: PlacedBlock[], streets?: Street[]): number {
+  return mountainRing(blocks, streets)?.outerR ?? 0;
 }
 
 function mulberry32(seed: number) {
@@ -29,18 +66,11 @@ function mulberry32(seed: number) {
   };
 }
 
-export function Mountains({ blocks }: { blocks: PlacedBlock[] }) {
+export function Mountains({ blocks, streets }: { blocks: PlacedBlock[]; streets: Street[] }) {
   const voxels = useMemo(() => {
-    if (blocks.length === 0) return [];
-    const minX = Math.min(...blocks.map((b) => b.x - b.width / 2));
-    const maxX = Math.max(...blocks.map((b) => b.x + b.width / 2));
-    const minZ = Math.min(...blocks.map((b) => b.z - b.depth / 2));
-    const maxZ = Math.max(...blocks.map((b) => b.z + b.depth / 2));
-    const cx = (minX + maxX) / 2;
-    const cz = (minZ + maxZ) / 2;
-    const cityR = Math.max(maxX - minX, maxZ - minZ) / 2;
-    const innerR = cityR + MOUNTAIN_INNER_GAP;
-    const outerR = innerR + MOUNTAIN_BAND_WIDTH;
+    const ring = mountainRing(blocks, streets);
+    if (!ring) return [];
+    const { cx, cz, innerR, outerR } = ring;
 
     const noise = createNoise3D(mulberry32(4242));
     const fbm = (x: number, z: number): number => {

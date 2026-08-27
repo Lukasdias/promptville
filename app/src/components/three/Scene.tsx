@@ -34,7 +34,7 @@ export function Scene() {
     [mainStreets, bounds, ring],
   );
 
-  const extent = useMemo(() => mountainOuterRadius(blocks) + 6, [blocks]);
+  const extent = useMemo(() => mountainOuterRadius(blocks, renderStreets) + 6, [blocks, renderStreets]);
   const intersections = useMemo(() => findIntersections(graphStreets), [graphStreets]);
   const crosswalkIntersections = useMemo(() => findIntersections(mainStreets), [mainStreets]);
   const controller = useMemo(
@@ -70,7 +70,7 @@ export function Scene() {
       <People />
       <Traffic streets={renderStreets} intersections={intersections} controller={controller} graph={graph} />
       <Crossers streets={mainStreets} intersections={intersections} controller={controller} />
-      <Mountains blocks={blocks} />
+      <Mountains blocks={blocks} streets={renderStreets} />
       <SelectedBanner />
     </>
   );
