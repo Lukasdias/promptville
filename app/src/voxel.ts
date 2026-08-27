@@ -248,41 +248,12 @@ export function coneVoxels(color: string = CONE_COLOR): Voxel[] {
   return voxels;
 }
 
-export function trafficLightVoxels(
-  pole: string = TRAFFIC_POLE,
-  housing: string = TRAFFIC_BOX,
-): Voxel[] {
+export function trafficLightVoxels(pole: string = TRAFFIC_POLE): Voxel[] {
   const voxels: Voxel[] = [];
-  const push = (x: number, y: number, z: number, color: string) => voxels.push({ x, y, z, color });
-
-  // Base pedestal
-  for (let x = -1; x <= 1; x++) {
-    for (let z = -1; z <= 1; z++) push(x, 0, z, pole);
-  }
-  // Pole
-  for (let y = 1; y <= 5; y++) push(0, y, 0, pole);
-  // Housing frame (front panel)
-  for (let y = 6; y <= 11; y++) {
-    for (let x = -2; x <= 2; x++) push(x, y, 0, housing);
-  }
-  // Cap on top
-  for (let x = -2; x <= 2; x++) push(x, 12, 0, housing);
-
-  // Three hooded lenses on the front face (protrude at z = -1)
-  const lamps: { y: number; color: string }[] = [
-    { y: 6, color: TRAFFIC_GREEN },
-    { y: 8, color: TRAFFIC_YELLOW },
-    { y: 10, color: TRAFFIC_RED },
-  ];
-  for (const lamp of lamps) {
-    for (let x = -1; x <= 1; x++) {
-      push(x, lamp.y, -1, lamp.color);
-      push(x, lamp.y + 1, -1, lamp.color);
-    }
-    // Visor hood above the lens
-    for (let x = -2; x <= 2; x++) push(x, lamp.y + 2, -1, housing);
-  }
-
+  for (let y = 0; y <= 2; y++) voxels.push({ x: 0, y, z: 0, color: pole });
+  voxels.push({ x: 0, y: 3, z: 0, color: TRAFFIC_GREEN });
+  voxels.push({ x: 0, y: 4, z: 0, color: TRAFFIC_YELLOW });
+  voxels.push({ x: 0, y: 5, z: 0, color: TRAFFIC_RED });
   return voxels;
 }
 

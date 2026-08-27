@@ -198,16 +198,11 @@ describe("environmental blueprints", () => {
     expect(voxels.every((v) => v.color === CONE_COLOR)).toBe(true);
   });
 
-  test("traffic light is a detailed pole with pedestal, frame and hooded R/Y/G lenses", () => {
+  test("traffic light is a simple pole with three colored lens blocks", () => {
     const voxels = trafficLightVoxels();
-    expect(voxels).toHaveLength(82);
-    // One lens per color, on the front face, with a visor hood above each
-    expect(voxels.some((v) => v.color === "#3ddc64" && v.y === 6 && v.z === -1)).toBe(true);
-    expect(voxels.some((v) => v.color === "#ffd24a" && v.y === 8 && v.z === -1)).toBe(true);
-    expect(voxels.some((v) => v.color === "#ff5252" && v.y === 10 && v.z === -1)).toBe(true);
-    expect(voxels.some((v) => v.z === -1 && v.y === 8 && v.color !== "#ffd24a")).toBe(true); // green visor
-    // pedestal + cap
-    expect(voxels.some((v) => v.y === 0)).toBe(true);
-    expect(voxels.some((v) => v.y === 12 && v.z === 0)).toBe(true);
+    expect(voxels).toHaveLength(6);
+    expect(voxels[3]).toEqual({ x: 0, y: 3, z: 0, color: "#3ddc64" });
+    expect(voxels[4]).toEqual({ x: 0, y: 4, z: 0, color: "#ffd24a" });
+    expect(voxels[5]).toEqual({ x: 0, y: 5, z: 0, color: "#ff5252" });
   });
 });

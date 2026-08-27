@@ -7,11 +7,11 @@ import { trafficLightVoxels, TRAFFIC_GREEN, TRAFFIC_YELLOW, TRAFFIC_RED } from "
 import { InstancedVoxels } from "./InstancedVoxels";
 
 const LIGHT_SIZE = 0.22;
-// World heights of the lens voxel centers in the blueprint (y 6/8/10 → 2-tall lamps).
+// World heights of the lens voxel centers in the blueprint (y 3/4/5).
 const LAMP_Y = {
-  green: (6.5 + 7.5) * 0.5 * LIGHT_SIZE,
-  yellow: (8.5 + 9.5) * 0.5 * LIGHT_SIZE,
-  red: (10.5 + 11.5) * 0.5 * LIGHT_SIZE,
+  green: 3.5 * LIGHT_SIZE,
+  yellow: 4.5 * LIGHT_SIZE,
+  red: 5.5 * LIGHT_SIZE,
 };
 // Half the sidewalk width: the light stands on the sidewalk at the corner.
 const SIDEWALK_CENTER = 0.35;
