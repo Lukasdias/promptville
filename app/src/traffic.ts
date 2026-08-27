@@ -7,6 +7,9 @@ export interface Intersection {
 }
 
 export type Axis = "x" | "z";
+export type SignalColor = "green" | "yellow" | "red";
+
+const YELLOW_DURATION = 1.5;
 
 // Finds every junction where a vertical street meets a horizontal avenue.
 export function findIntersections(streets: Street[]): Intersection[] {
@@ -25,11 +28,13 @@ export function findIntersections(streets: Street[]): Intersection[] {
 }
 
 // Adaptive-style traffic light controller. Avenues (x) stay green ~2/3 of the time
-// and side streets (z) get a short window; phase durations vary per cycle instead of
-// using a rigid timer, loosely modeled on density-adaptive signal control.
+// and side streets (z) get a short window; each phase ends with a fixed yellow
+// clearance. Phase durations vary per cycle instead of a rigid timer, loosely
+// modeled on density-adaptive signal control.
 export class TrafficController {
-  private green: Axis[] = [];
-  private next: number[] = [];
+  private axis: Axis[] = [];
+  private color: ("green" | "yellow")[] = [];
+  private until: number[] = [];
   private time = 0;
 
   constructor(
@@ -38,12 +43,13 @@ export class TrafficController {
     private readonly rng: () => number = Math.random,
   ) {
     for (let i = 0; i < intersections.length; i++) {
-      this.green.push(i % 2 === 0 ? "x" : "z");
-      this.next.push(this.phaseDuration(this.green[i]));
+      this.axis.push(i % 2 === 0 ? "x" : "z");
+      this.color.push("green");
+      this.until.push(this.greenDuration(this.axis[i]));
     }
   }
 
-  private phaseDuration(axis: Axis): number {
+  private greenDuration(axis: Axis): number {
     const base = axis === "x" ? this.cycle : this.cycle * 0.5;
     return base * (0.7 + this.rng() * 0.6);
   }
@@ -51,14 +57,30 @@ export class TrafficController {
   tick(delta: number): void {
     this.time += delta;
     for (let i = 0; i < this.intersections.length; i++) {
-      while (this.time >= this.next[i]) {
-        this.green[i] = this.green[i] === "x" ? "z" : "x";
-        this.next[i] += this.phaseDuration(this.green[i]);
+      while (this.time >= this.until[i]) {
+        if (this.color[i] === "green") {
+          this.color[i] = "yellow";
+          this.until[i] += YELLOW_DURATION;
+        } else {
+          this.color[i] = "green";
+          this.axis[i] = this.axis[i] === "x" ? "z" : "x";
+          this.until[i] += this.greenDuration(this.axis[i]);
+        }
       }
     }
   }
 
   greenFor(id: number, axis: Axis): boolean {
-    return this.green[id] === axis;
+    return this.color[id] === "green" && this.axis[id] === axis;
+  }
+
+  yellowFor(id: number): boolean {
+    return this.color[id] === "yellow";
+  }
+
+  // The signal the avenue (x-axis) traffic sees at this intersection.
+  signalColorFor(id: number): SignalColor {
+    if (this.color[id] === "green") return this.axis[id] === "x" ? "green" : "red";
+    return this.axis[id] === "x" ? "yellow" : "red";
   }
 }

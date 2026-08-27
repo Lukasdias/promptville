@@ -32,6 +32,7 @@ export const CONE_COLOR = "#ff9f1c";
 export const TRAFFIC_POLE = "#3c3a42";
 export const TRAFFIC_BOX = "#222222";
 export const TRAFFIC_GREEN = "#3ddc64";
+export const TRAFFIC_YELLOW = "#ffd24a";
 export const TRAFFIC_RED = "#ff5252";
 
 export interface HouseVoxelOptions {

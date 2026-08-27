@@ -3,7 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 import type { Street } from "../../layout";
 import { traffic } from "../../config";
-import { TrafficController, findIntersections, type Intersection } from "../../traffic";
+import type { Intersection, TrafficController } from "../../traffic";
 import { carVoxels, personVoxels, type Voxel } from "../../voxel";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { TrafficLights } from "./TrafficLights";
@@ -249,14 +249,16 @@ function RunnerMover({ spec }: { spec: TrafficSpec }) {
   );
 }
 
-export function Traffic({ streets }: { streets: Street[] }) {
+export function Traffic({
+  streets,
+  intersections,
+  controller,
+}: {
+  streets: Street[];
+  intersections: Intersection[];
+  controller: TrafficController;
+}) {
   const specs = useTrafficSpecs(streets);
-
-  const intersections = useMemo(() => findIntersections(streets), [streets]);
-  const controller = useMemo(
-    () => new TrafficController(intersections, traffic.cycle),
-    [intersections],
-  );
 
   const lightsByStreet = useMemo(() => {
     const map = new Map<number, { x: number; id: number }[]>();

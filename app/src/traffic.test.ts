@@ -34,23 +34,21 @@ describe("findIntersections", () => {
 });
 
 describe("TrafficController", () => {
-  test("starts with staggered green axes and flips after the phase elapses", () => {
-    const controller = new TrafficController(
-      [
-        { id: 0, x: 0, z: 0 },
-        { id: 1, x: 5, z: 0 },
-      ],
-      10,
-      () => 0.5, // factor (0.7 + 0.3) = 1.0 → x phase 10s, z phase 5s
-    );
+  test("green → yellow → other axis green, with avenue signal colors", () => {
+    const controller = new TrafficController([{ id: 0, x: 0, z: 0 }], 10, () => 0.5);
+    // factor (0.7 + 0.3) = 1.0 → x green 10s, yellow 1.5s, z green 5s
     expect(controller.greenFor(0, "x")).toBe(true);
-    expect(controller.greenFor(1, "z")).toBe(true);
+    expect(controller.signalColorFor(0)).toBe("green");
 
     controller.tick(5);
-    expect(controller.greenFor(0, "x")).toBe(true); // not elapsed yet
+    expect(controller.signalColorFor(0)).toBe("green");
 
-    controller.tick(5.1);
+    controller.tick(5.1); // t=10.1 → x yellow
     expect(controller.greenFor(0, "x")).toBe(false);
+    expect(controller.signalColorFor(0)).toBe("yellow");
+
+    controller.tick(1.5); // t=11.6 → axis flips to z, avenue red
+    expect(controller.signalColorFor(0)).toBe("red");
     expect(controller.greenFor(0, "z")).toBe(true);
   });
 
@@ -64,13 +62,11 @@ describe("TrafficController", () => {
       () => 0.5,
     );
     controller.tick(19.5);
-    // id 0: x→(10)z→(15)x, next 25 → x green
+    // id 0: x→(10)y→(11.5)z→(16.5)y→(18)x, next 28 → x green
     expect(controller.greenFor(0, "x")).toBe(true);
-
-    // single intersection: x(3s)→z(1.5s)→x… at t=4.0 it is in the z window
-    const other = new TrafficController([{ id: 0, x: 0, z: 0 }], 3, () => 0.5);
-    other.tick(4.0);
-    expect(other.greenFor(0, "x")).toBe(false);
-    expect(other.greenFor(0, "z")).toBe(true);
+    expect(controller.signalColorFor(0)).toBe("green");
+    // id 1: z→(5)y→(6.5)x→(16.5)y→(18)z, next 23 → z green → avenue red
+    expect(controller.greenFor(1, "z")).toBe(true);
+    expect(controller.signalColorFor(1)).toBe("red");
   });
 });
