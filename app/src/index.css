@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fredoka", sans-serif;
+  --font-body: "Nunito", sans-serif;
+  --color-cream: #fff6e5;
+  --color-sky: #aee6ff;
+  --color-grass: #9bd46a;
+  --color-road: #f3e3c0;
+  --color-ink: #4a4453;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}

@@ -1,0 +1,16 @@
+{
+  "name": "promptville",
+  "private": true,
+  "type": "module",
+  "workspaces": ["server", "app"],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"bun --watch run server/index.ts\" \"bun run --cwd app dev\"",
+    "build": "bun run --cwd app build",
+    "test": "bun test",
+    "typecheck": "bun run --cwd server typecheck && bun run --cwd app typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5",
+    "typescript": "^7.0.2"
+  }
+}
