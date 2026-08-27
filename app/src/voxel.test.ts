@@ -198,13 +198,13 @@ describe("environmental blueprints", () => {
     expect(voxels.every((v) => v.color === CONE_COLOR)).toBe(true);
   });
 
-  test("traffic light is a thin pole with an R/Y/G signal head", () => {
+  test("traffic light is a thin pole with a neutral housing (lamp box rendered on top)", () => {
     const voxels = trafficLightVoxels();
     expect(voxels).toHaveLength(13);
-    expect(voxels.some((v) => v.color === "#ff5252" && v.x === 0 && v.y === 5)).toBe(true);
-    expect(voxels.some((v) => v.color === "#ffd24a" && v.x === 0 && v.y === 4)).toBe(true);
-    expect(voxels.some((v) => v.color === "#3ddc64" && v.x === 0 && v.y === 3)).toBe(true);
-    // housing flanks the lenses and nothing protrudes in z
+    // No baked lens colors — the live lamp is the single signal.
+    expect(voxels.some((v) => v.color === "#ff5252")).toBe(false);
+    expect(voxels.some((v) => v.color === "#ffd24a")).toBe(false);
+    expect(voxels.some((v) => v.color === "#3ddc64")).toBe(false);
     expect(voxels.every((v) => v.z === 0)).toBe(true);
   });
 });

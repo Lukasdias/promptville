@@ -255,13 +255,9 @@ export function trafficLightVoxels(
   const voxels: Voxel[] = [];
   // Thin pole
   for (let y = 0; y <= 2; y++) voxels.push({ x: 0, y, z: 0, color: pole });
-  // Signal head: 3-wide housing with the red/yellow/green lenses flush in the middle
-  const lenses = [TRAFFIC_GREEN, TRAFFIC_YELLOW, TRAFFIC_RED];
-  for (let i = 0; i < 3; i++) {
-    const y = 3 + i;
-    voxels.push({ x: -1, y, z: 0, color: box });
-    voxels.push({ x: 0, y, z: 0, color: lenses[i] });
-    voxels.push({ x: 1, y, z: 0, color: box });
+  // Neutral 3-wide housing — the live lamp box rendered on top is the single signal
+  for (let y = 3; y <= 5; y++) {
+    for (let x = -1; x <= 1; x++) voxels.push({ x, y, z: 0, color: box });
   }
   // Top cap
   voxels.push({ x: 0, y: 6, z: 0, color: box });
