@@ -35,7 +35,6 @@ export const COLORS = {
 export const LAWN_B = "#7ab34a";
 export const STONE_GROUT = "#e6d6bc";
 export const CROSSWALK_BRICK = "#f2c9a8";
-export const CROSSWALK_SHADOW = "#c9744f";
 
 export const BUILDING_COLORS: Record<BuildingKind, { body: string; accent: string; roof: string }> = {
   hospital: { body: "#ffffff", accent: "#ff5252", roof: "#eef2f5" },

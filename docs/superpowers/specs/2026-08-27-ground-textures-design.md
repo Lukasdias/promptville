@@ -48,8 +48,7 @@ Shared singletons replace:
 ### `Sidewalks.tsx`
 
 - Sidewalk strips → shared `sidewalkTexture` with per-strip texture clones (repeat keeps brick world scale on varying-length strips). Remove per-strip `makeBrickTexture`/canvas generation — one canvas, shared image.
-- **Crosswalks restyled** to brick-tone zebra: each stripe is a main stripe (`COLORS.crosswalk`-light brick) plus a thin darker edge strip offset on one side ("paper shadow", matching the paper-card HUD). Keep ~4 stripes crossing the avenue.
-- **Both directions**: at each intersection, render crossings over the avenue (stripes perpendicular to the avenue, as today) **and** over the side street (stripes along the avenue axis) when a vertical street exists at the intersection — completes the crossing.
+- **Crosswalks restyled** to brick-tone zebra, crossing the avenue at each junction (centered, spanning the full avenue width), computed by the pure `buildCrosswalks` in `app/src/crosswalk.ts` (unit-tested: no overlapping stripes, all stripes on a street). Single direction only — a two-direction corner layout does not fit the short grid-street segments (stripes land in road gaps and overlap).
 
 ## Determinism & performance
 
