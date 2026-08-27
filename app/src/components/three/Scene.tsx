@@ -4,6 +4,7 @@ import { layoutCity } from "../../layout";
 import { Ground } from "./Ground";
 import { City } from "./City";
 import { World } from "./World";
+import { SelectedBanner } from "./SelectedBanner";
 
 export function Scene() {
   const { data } = useNeighborhood();
@@ -31,6 +32,7 @@ export function Scene() {
       <Ground blocks={blocks} />
       <City />
       <World />
+      <SelectedBanner />
     </>
   );
 }
