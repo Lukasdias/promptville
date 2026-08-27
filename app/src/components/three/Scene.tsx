@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useApp } from "../../store";
 import { layoutCity } from "../../layout";
 import { Ground } from "./Ground";
+import { City } from "./City";
 
 export function Scene() {
   const data = useApp((s) => s.data);
@@ -27,6 +28,7 @@ export function Scene() {
         shadow-camera-bottom={-40}
       />
       <Ground blocks={blocks} />
+      <City />
     </>
   );
 }
