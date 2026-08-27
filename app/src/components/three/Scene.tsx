@@ -4,7 +4,7 @@ import { buildStreets, layoutCity } from "../../layout";
 import { Ground } from "./Ground";
 import { City } from "./City";
 import { World } from "./World";
-import { Mountains } from "./Mountains";
+import { Mountains, mountainOuterRadius } from "./Mountains";
 import { People } from "./People";
 import { Traffic } from "./Traffic";
 import { SelectedBanner } from "./SelectedBanner";
@@ -16,6 +16,7 @@ export function Scene() {
     [data],
   );
   const streets = useMemo(() => buildStreets(blocks), [blocks]);
+  const extent = useMemo(() => mountainOuterRadius(blocks) + 6, [blocks]);
 
   return (
     <>
@@ -33,7 +34,7 @@ export function Scene() {
         shadow-camera-top={45}
         shadow-camera-bottom={-45}
       />
-      <Ground blocks={blocks} streets={streets} />
+      <Ground blocks={blocks} streets={streets} extent={extent} />
       <City />
       <World blocks={blocks} streets={streets} />
       <People />

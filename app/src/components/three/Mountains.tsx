@@ -6,9 +6,19 @@ import { MOUNTAIN_COLOR, SNOW_COLOR } from "../../voxel";
 
 const NOISE_SCALE = 0.035;
 const MAX_HEIGHT = 22;
-const INNER_GAP = 14;
-const BAND_WIDTH = 30;
+export const MOUNTAIN_INNER_GAP = 14;
+export const MOUNTAIN_BAND_WIDTH = 30;
 const SURFACE_LAYERS = 3;
+
+export function mountainOuterRadius(blocks: PlacedBlock[]): number {
+  if (blocks.length === 0) return 0;
+  const minX = Math.min(...blocks.map((b) => b.x - b.width / 2));
+  const maxX = Math.max(...blocks.map((b) => b.x + b.width / 2));
+  const minZ = Math.min(...blocks.map((b) => b.z - b.depth / 2));
+  const maxZ = Math.max(...blocks.map((b) => b.z + b.depth / 2));
+  const cityR = Math.max(maxX - minX, maxZ - minZ) / 2;
+  return cityR + MOUNTAIN_INNER_GAP + MOUNTAIN_BAND_WIDTH;
+}
 
 function mulberry32(seed: number) {
   return () => {
@@ -30,8 +40,8 @@ export function Mountains({ blocks }: { blocks: PlacedBlock[] }) {
     const cx = (minX + maxX) / 2;
     const cz = (minZ + maxZ) / 2;
     const cityR = Math.max(maxX - minX, maxZ - minZ) / 2;
-    const innerR = cityR + INNER_GAP;
-    const outerR = innerR + BAND_WIDTH;
+    const innerR = cityR + MOUNTAIN_INNER_GAP;
+    const outerR = innerR + MOUNTAIN_BAND_WIDTH;
 
     const noise = createNoise3D(mulberry32(4242));
     const fbm = (x: number, z: number): number => {
@@ -56,7 +66,7 @@ export function Mountains({ blocks }: { blocks: PlacedBlock[] }) {
       for (let z = start; z <= end; z++) {
         const d = Math.hypot(x - cx, z - cz);
         if (d <= innerR) continue;
-        const ramp = Math.min(1, (d - innerR) / BAND_WIDTH);
+        const ramp = Math.min(1, (d - innerR) / MOUNTAIN_BAND_WIDTH);
         const raw = (fbm(x, z) + 1) / 2;
         const h = Math.round(raw * MAX_HEIGHT * (0.35 + 0.65 * ramp));
         if (h < SURFACE_LAYERS) continue;

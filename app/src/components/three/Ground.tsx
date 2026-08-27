@@ -60,9 +60,11 @@ function pickParkSpot(
 export function Ground({
   blocks,
   streets,
+  extent,
 }: {
   blocks: PlacedBlock[];
   streets: Street[];
+  extent: number;
 }) {
   const clearSelection = useApp((s) => s.clearSelection);
   const clear = (e: { stopPropagation: () => void }) => {
@@ -75,17 +77,15 @@ export function Ground({
   const maxZ = Math.max(...blocks.map((b) => b.z + b.depth / 2)) + 8;
   const minX = Math.min(...blocks.map((b) => b.x - b.width / 2)) - 8;
   const minZ = Math.min(...blocks.map((b) => b.z - b.depth / 2)) - 8;
-  const sizeX = maxX - minX;
-  const sizeZ = maxZ - minZ;
   const cx = (maxX + minX) / 2;
   const cz = (maxZ + minZ) / 2;
   const park = pickParkSpot(blocks, minX, maxX, minZ, maxZ);
 
   return (
     <group>
-      {/* Grass base */}
+      {/* Grass base — extends past the mountain ring so no corner lacks ground */}
       <mesh position={[cx, -0.05, cz]} rotation-x={-Math.PI / 2} onClick={clear}>
-        <planeGeometry args={[sizeX, sizeZ]} />
+        <planeGeometry args={[extent * 2, extent * 2]} />
         <meshStandardMaterial color={COLORS.grass} />
       </mesh>
 
