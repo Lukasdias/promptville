@@ -5,6 +5,7 @@ Promptville is a local-only 3D visualization of your opencode history, rendered 
 - **Height** scales with token usage (bigger house = more tokens)
 - **Roof color** encodes the model
 - **Body color** identifies the project
+- **Layout is deterministic**: projects are ranked by activity (session count, then recency) and placed on a fixed grid around a central plaza — the most active project always occupies the lane north of the plaza. House slots use fixed columns, so adding a session never moves existing houses.
 - A cartoon HUD shows aggregate stats: total cost, tokens, top models, top projects
 
 The scene is built with React Three Fiber and reads the opencode sqlite database read-only through a small Bun API server. Data is live from your local database — refresh the page to re-fetch.

@@ -7,6 +7,7 @@ import { useApp } from "../../store";
 import {
   DEFAULT_CAMERA,
   DEFAULT_DISTANCE,
+  DEFAULT_EXTENT,
   DEFAULT_YAW,
   DRAG_THRESHOLD,
   EDGE_MARGIN,
@@ -70,6 +71,17 @@ export function CivCamera() {
     goal.current.x = t.x;
     goal.current.z = t.z;
   }, [selected, blocks, projects]);
+
+  // On first data load, zoom out to frame the whole town. Never overrides a
+  // user zoom once they have moved the camera.
+  useEffect(() => {
+    if (extent <= DEFAULT_EXTENT) return;
+    if (goal.current.distance !== DEFAULT_CAMERA.distance) return;
+    goal.current.distance = clampState(
+      { ...DEFAULT_CAMERA, distance: extent * 0.9 },
+      extent,
+    ).distance;
+  }, [extent]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
