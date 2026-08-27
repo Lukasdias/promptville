@@ -17,10 +17,13 @@ import {
 } from "./civic";
 import type { BuildingLot } from "./civic";
 
+const sessions = (n: number) =>
+  Array.from({ length: n }, (_, i) => ({ id: `s${i}`, tokensIn: 10, tokensOut: 5, timeCreated: i }));
+
 const projects = Array.from({ length: 9 }, (_, i) => ({
   id: `p${i}`,
   name: `P${i}`,
-  sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })),
+  sessions: sessions(8),
 }));
 
 function makeCivic() {

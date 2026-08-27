@@ -2,13 +2,16 @@ import { describe, expect, test } from "bun:test";
 import { layoutCity, buildStreets } from "./layout";
 import { TrafficController, findIntersections, pickDestination } from "./traffic";
 
+const sessions = (n: number) =>
+  Array.from({ length: n }, (_, i) => ({ id: `s${i}`, tokensIn: 10, tokensOut: 5, timeCreated: i }));
+
 const projects = [
-  { id: "a", name: "A", sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })) },
-  { id: "b", name: "B", sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })) },
-  { id: "c", name: "C", sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })) },
-  { id: "d", name: "D", sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })) },
-  { id: "e", name: "E", sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })) },
-  { id: "f", name: "F", sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })) },
+  { id: "a", name: "A", sessions: sessions(8) },
+  { id: "b", name: "B", sessions: sessions(8) },
+  { id: "c", name: "C", sessions: sessions(8) },
+  { id: "d", name: "D", sessions: sessions(8) },
+  { id: "e", name: "E", sessions: sessions(8) },
+  { id: "f", name: "F", sessions: sessions(8) },
 ];
 
 describe("findIntersections", () => {

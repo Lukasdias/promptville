@@ -9,13 +9,16 @@ import {
 import { findIntersections } from "./traffic";
 import { buildRoadGraph, hasNode, planRoute } from "./roadgraph";
 
+const sessions = (n: number) =>
+  Array.from({ length: n }, (_, i) => ({ id: `s${i}`, tokensIn: 10, tokensOut: 5, timeCreated: i }));
+
 const projects = [
-  { id: "a", name: "A", sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })) },
-  { id: "b", name: "B", sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })) },
-  { id: "c", name: "C", sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })) },
-  { id: "d", name: "D", sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })) },
-  { id: "e", name: "E", sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })) },
-  { id: "f", name: "F", sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })) },
+  { id: "a", name: "A", sessions: sessions(8) },
+  { id: "b", name: "B", sessions: sessions(8) },
+  { id: "c", name: "C", sessions: sessions(8) },
+  { id: "d", name: "D", sessions: sessions(8) },
+  { id: "e", name: "E", sessions: sessions(8) },
+  { id: "f", name: "F", sessions: sessions(8) },
 ];
 
 describe("buildPerimeterRing", () => {
@@ -110,7 +113,6 @@ describe("buildRoadGraph", () => {
   });
 
   test("deep avenues from varied block sizes still leave no dead ends", () => {
-    const sessions = (n: number) => Array.from({ length: n }, () => ({ tokensIn: 10, tokensOut: 5 }));
     const varied = [
       { id: "big", name: "big", sessions: sessions(171) },
       { id: "b", name: "b", sessions: sessions(80) },

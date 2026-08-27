@@ -13,14 +13,12 @@ export interface PlacedBlock {
   depth: number;
   houses: HouseSlot[];
   kind?: "block" | "plaza";
+  cells: Cell[];
 }
 
 export const HOUSE_SPACING = 1.7;
 export const HOUSE_PAD = 0.6;
 export const ROAD_WIDTH = 3.5;
-
-// Kept until the Task 2 layoutCity rewrite; removed by the spiral layout.
-export const BLOCKS_PER_ROW = 4;
 
 // Deterministic town grid: projects occupy cells on a uniform square lattice.
 // Streets run along cell boundaries; the plaza owns cell (0,0).
@@ -120,88 +118,86 @@ export function spiralCell(rank: number): Cell {
   return ringCells(2, rank - 7)[rank - 8]!;
 }
 
+function cellKey(c: Cell): string {
+  return `${c.cx}:${c.cz}`;
+}
+
+function bestAdjacentFree(cells: Cell[], assigned: Set<string>): Cell | null {
+  const owned = new Set(cells.map(cellKey));
+  const dirs: readonly (readonly [number, number])[] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  let best: Cell | null = null;
+  let bestScore = Infinity;
+  for (const c of cells) {
+    for (const [dx, dz] of dirs) {
+      const n: Cell = { cx: c.cx + dx, cz: c.cz + dz };
+      if (owned.has(cellKey(n)) || assigned.has(cellKey(n))) continue;
+      // Prefer closer to the plaza; ties go north, then west.
+      const score = Math.max(Math.abs(n.cx), Math.abs(n.cz)) * 1000 + n.cz * 10 + n.cx;
+      if (score < bestScore) {
+        bestScore = score;
+        best = n;
+      }
+    }
+  }
+  return best;
+}
+
 export function layoutCity(projects: InputProject[], opts?: LayoutOpts): PlacedBlock[] {
-  const blocks: PlacedBlock[] = [];
-  if (projects.length === 0) return blocks;
+  const plaza = opts?.plaza ?? CIVIC_PLAZA;
+  const ranked = rankProjects(projects);
+  const blocks: PlacedBlock[] = [
+    {
+      projectId: "__plaza__",
+      name: "Civic Plaza",
+      x: 0,
+      z: 0,
+      width: plaza.width,
+      depth: plaza.depth,
+      houses: [],
+      kind: "plaza",
+      cells: [{ cx: 0, cz: 0 }],
+    },
+  ];
+  const assigned = new Set<string>(["0:0"]);
+  let ordinal = 0;
 
-  const plaza = opts?.plaza;
-  const rows = Math.ceil(projects.length / BLOCKS_PER_ROW);
-  const plazaRow = plaza ? Math.floor(rows / 2) : -1;
+  const nextHome = (): Cell => {
+    while (assigned.has(cellKey(spiralCell(ordinal)))) ordinal++;
+    const cell = spiralCell(ordinal);
+    ordinal++;
+    return cell;
+  };
 
-  type Cell = { kind: "project"; i: number } | { kind: "plaza" };
-  const cellRows: Cell[][] = [];
-  for (let r = 0; r < rows; r++) {
-    const cellRow: Cell[] = [];
-    for (let c = 0; c < BLOCKS_PER_ROW; c++) {
-      const i = r * BLOCKS_PER_ROW + c;
-      if (i >= projects.length) break;
-      cellRow.push({ kind: "project", i });
+  for (const p of ranked) {
+    const rowsNeeded = Math.max(1, Math.ceil(p.sessions.length / HOUSE_COLS));
+    const cellsNeeded = Math.max(1, Math.ceil(rowsNeeded / CELL_ROWS));
+    const cells: Cell[] = [nextHome()];
+    while (cells.length < cellsNeeded) {
+      const adjacent = bestAdjacentFree(cells, assigned);
+      if (adjacent) cells.push(adjacent);
+      else cells.push(nextHome());
     }
-    if (r === plazaRow) cellRow.splice(Math.min(1, cellRow.length), 0, { kind: "plaza" });
-    cellRows.push(cellRow);
-  }
-  // Reflow rows that exceed BLOCKS_PER_ROW slots.
-  for (let r = 0; r < cellRows.length; r++) {
-    const row = cellRows[r];
-    while (row.length > BLOCKS_PER_ROW) {
-      const overflow = row.pop()!;
-      if (r + 1 < cellRows.length) cellRows[r + 1].unshift(overflow);
-      else cellRows.push([overflow]);
-    }
-  }
+    for (const c of cells) assigned.add(cellKey(c));
 
-  let x = 0;
-  let z = 0;
-  let rowDepth = 0;
-  for (const row of cellRows) {
-    for (const cell of row) {
-      if (cell.kind === "plaza") {
-        const block: PlacedBlock = {
-          projectId: "__plaza__",
-          name: "Civic Plaza",
-          x,
-          z,
-          width: plaza!.width,
-          depth: plaza!.depth,
-          houses: [],
-          kind: "plaza",
-        };
-        blocks.push(block);
-        x += plaza!.width + ROAD_WIDTH;
-        rowDepth = Math.max(rowDepth, plaza!.depth);
-        continue;
-      }
-      const project = projects[cell.i];
-      const count = project.sessions.length;
-      const cols = Math.max(1, Math.ceil(Math.sqrt(count)));
-      const blockRows = Math.max(1, Math.ceil(count / cols));
-      const width = cols * HOUSE_SPACING + HOUSE_PAD * 2;
-      const depth = blockRows * HOUSE_SPACING + HOUSE_PAD * 2;
-      const block: PlacedBlock = {
-        projectId: project.id,
-        name: project.name,
-        x,
-        z,
-        width,
-        depth,
-        houses: [],
-      };
-      for (let i = 0; i < count; i++) {
-        const col = i % cols;
-        const rw = Math.floor(i / cols);
-        block.houses.push({
-          x: x - width / 2 + HOUSE_PAD + HOUSE_SPACING / 2 + col * HOUSE_SPACING,
-          z: z - depth / 2 + HOUSE_PAD + HOUSE_SPACING / 2 + rw * HOUSE_SPACING,
-          index: i,
-        });
-      }
-      blocks.push(block);
-      x += width + ROAD_WIDTH;
-      rowDepth = Math.max(rowDepth, depth);
-    }
-    x = 0;
-    z += rowDepth + ROAD_WIDTH;
-    rowDepth = 0;
+    const minCx = Math.min(...cells.map((c) => c.cx));
+    const maxCx = Math.max(...cells.map((c) => c.cx));
+    const minCz = Math.min(...cells.map((c) => c.cz));
+    const maxCz = Math.max(...cells.map((c) => c.cz));
+    const width = (maxCx - minCx + 1) * CELL_PITCH - ROAD_WIDTH;
+    const depth = (maxCz - minCz + 1) * CELL_PITCH - ROAD_WIDTH;
+    const x = ((minCx + maxCx) / 2) * CELL_PITCH;
+    const z = ((minCz + maxCz) / 2) * CELL_PITCH;
+
+    const sorted = [...p.sessions].sort(
+      (a, b) => a.timeCreated - b.timeCreated || a.id.localeCompare(b.id),
+    );
+    const houses: HouseSlot[] = sorted.map((_, i) => ({
+      x: x - width / 2 + HOUSE_PAD + HOUSE_SPACING / 2 + (i % HOUSE_COLS) * HOUSE_SPACING,
+      z: z - depth / 2 + HOUSE_PAD + HOUSE_SPACING / 2 + Math.floor(i / HOUSE_COLS) * HOUSE_SPACING,
+      index: i,
+    }));
+
+    blocks.push({ projectId: p.id, name: p.name, x, z, width, depth, houses, cells });
   }
 
   return blocks;
@@ -210,45 +206,70 @@ export function layoutCity(projects: InputProject[], opts?: LayoutOpts): PlacedB
 // Builds a connected street graph from the block layout. Horizontal avenues span
 // the full city width between rows; vertical streets fill each column gap, joining
 // the row's top and bottom avenues. Result is one connected network (grid pattern).
+function mergeRuns(streets: Street[]): Street[] {
+  const byAxis = new Map<number, Street[]>();
+  for (const s of streets) {
+    const horizontal = s.width >= s.depth;
+    const key = Math.round(horizontal ? s.z * 100 : s.x * 100);
+    const group = byAxis.get(key);
+    if (group) group.push(s);
+    else byAxis.set(key, [s]);
+  }
+  const out: Street[] = [];
+  for (const group of byAxis.values()) {
+    const horizontal = group[0]!.width >= group[0]!.depth;
+    const sorted = [...group].sort((a, b) => (horizontal ? a.x - b.x : a.z - b.z));
+    let cur = sorted[0]!;
+    for (const next of sorted.slice(1)) {
+      const curEnd = horizontal ? cur.x + cur.width / 2 : cur.z + cur.depth / 2;
+      const nextStart = horizontal ? next.x - next.width / 2 : next.z - next.depth / 2;
+      if (Math.abs(nextStart - curEnd) < 0.01) {
+        if (horizontal) cur.width = next.x + next.width / 2 - (cur.x - cur.width / 2);
+        else cur.depth = next.z + next.depth / 2 - (cur.z - cur.depth / 2);
+      } else {
+        out.push(cur);
+        cur = next;
+      }
+    }
+    out.push(cur);
+  }
+  return out;
+}
+
+// Builds the street grid from the cell lattice: one street rect for every cell
+// boundary shared by two differently-owned cells (vertical for east/west
+// neighbors, horizontal for north/south), with collinear runs merged into
+// single long streets.
 export function buildStreets(blocks: PlacedBlock[]): Street[] {
   if (blocks.length === 0) return [];
-  const streets: Street[] = [];
-  const minX = Math.min(...blocks.map((b) => b.x - b.width / 2));
-  const maxX = Math.max(...blocks.map((b) => b.x + b.width / 2));
-  const rowCount = Math.ceil(blocks.length / BLOCKS_PER_ROW);
+  const owner = new Map<string, PlacedBlock>();
+  for (const b of blocks) for (const c of b.cells) owner.set(`${c.cx}:${c.cz}`, b);
 
-  for (let r = 0; r < rowCount; r++) {
-    const row = blocks.slice(r * BLOCKS_PER_ROW, r * BLOCKS_PER_ROW + BLOCKS_PER_ROW);
-    const rowTop = Math.min(...row.map((b) => b.z - b.depth / 2));
-    const rowBottom = Math.max(...row.map((b) => b.z + b.depth / 2));
-
-    for (let i = 0; i < row.length - 1; i++) {
-      const right = blocks[r * BLOCKS_PER_ROW + i].x + blocks[r * BLOCKS_PER_ROW + i].width / 2;
-      const left = blocks[r * BLOCKS_PER_ROW + i + 1].x - blocks[r * BLOCKS_PER_ROW + i + 1].width / 2;
-      streets.push({
-        x: (right + left) / 2,
-        z: (rowTop + rowBottom) / 2,
-        width: left - right,
-        depth: rowBottom - rowTop,
-      });
-    }
-
-    if (r < rowCount - 1) {
-      const nextTop = Math.min(
-        ...blocks
-          .slice((r + 1) * BLOCKS_PER_ROW, (r + 1) * BLOCKS_PER_ROW + BLOCKS_PER_ROW)
-          .map((b) => b.z - b.depth / 2),
-      );
-      streets.push({
-        x: (minX + maxX) / 2,
-        z: (rowBottom + nextTop) / 2,
-        width: maxX - minX,
-        depth: nextTop - rowBottom,
-      });
+  const verticals: Street[] = [];
+  const horizontals: Street[] = [];
+  for (const b of blocks) {
+    for (const c of b.cells) {
+      const east = owner.get(`${c.cx + 1}:${c.cz}`);
+      if (east && east !== b) {
+        verticals.push({
+          x: c.cx * CELL_PITCH + CELL_PITCH / 2,
+          z: c.cz * CELL_PITCH,
+          width: ROAD_WIDTH,
+          depth: CELL_PITCH,
+        });
+      }
+      const south = owner.get(`${c.cx}:${c.cz + 1}`);
+      if (south && south !== b) {
+        horizontals.push({
+          x: c.cx * CELL_PITCH,
+          z: c.cz * CELL_PITCH + CELL_PITCH / 2,
+          width: CELL_PITCH,
+          depth: ROAD_WIDTH,
+        });
+      }
     }
   }
-
-  return streets;
+  return [...mergeRuns(horizontals), ...mergeRuns(verticals)];
 }
 
 export interface Bounds {
