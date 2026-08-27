@@ -2,7 +2,7 @@ import type { PlacedBlock, Street } from "../../layout";
 import { useApp } from "../../store";
 import { isPanActive } from "../../pan";
 import { COLORS } from "../../theme";
-import { pickParkSpot } from "../../placement";
+import { pickParkSpot, PARK_RADIUS } from "../../placement";
 
 const DASH_PERIOD = 2.4;
 const DASH_LENGTH = 1.1;
@@ -123,7 +123,7 @@ export function Ground({
       {/* Park in a free corner */}
       {park && (
         <mesh position={[park.x, -0.04, park.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear}>
-          <circleGeometry args={[7, 24]} />
+          <circleGeometry args={[PARK_RADIUS, 24]} />
           <meshStandardMaterial color={COLORS.grassDark} />
         </mesh>
       )}

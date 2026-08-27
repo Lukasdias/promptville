@@ -26,6 +26,8 @@ const LAMBDA_ROTATE = 8;
 const LAMBDA_ZOOM = 5;
 const KEY_PAN_SPEED = 1.6;
 const PIXEL_PAN_SCALE = 0.003;
+// Initial zoom distance as a fraction of the city extent.
+const FIT_SCALE = 0.9;
 
 const HANDLED_KEYS = new Set([
   "w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright",
@@ -78,7 +80,7 @@ export function CivCamera() {
     if (extent <= DEFAULT_EXTENT) return;
     if (goal.current.distance !== DEFAULT_CAMERA.distance) return;
     goal.current.distance = clampState(
-      { ...DEFAULT_CAMERA, distance: extent * 0.9 },
+      { ...DEFAULT_CAMERA, distance: extent * FIT_SCALE },
       extent,
     ).distance;
   }, [extent]);

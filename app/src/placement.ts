@@ -1,5 +1,9 @@
 import type { PlacedBlock, Street } from "./layout";
 
+// Park geometry: the circular grass pad radius and its corner candidate offsets.
+export const PARK_RADIUS = 7;
+export const PARK_CORNER_OFFSET = 15;
+
 // True when (x, z) is clear of every block lot (padded) and every street.
 export function isClearSpot(
   x: number,
@@ -29,12 +33,12 @@ export function pickParkSpot(
   minZ: number,
   maxZ: number,
 ): { x: number; z: number } | null {
-  const r = 7;
+  const r = PARK_RADIUS;
   const candidates = [
-    { x: minX + 15, z: minZ + 15 },
-    { x: maxX - 15, z: minZ + 15 },
-    { x: minX + 15, z: maxZ - 15 },
-    { x: maxX - 15, z: maxZ - 15 },
+    { x: minX + PARK_CORNER_OFFSET, z: minZ + PARK_CORNER_OFFSET },
+    { x: maxX - PARK_CORNER_OFFSET, z: minZ + PARK_CORNER_OFFSET },
+    { x: minX + PARK_CORNER_OFFSET, z: maxZ - PARK_CORNER_OFFSET },
+    { x: maxX - PARK_CORNER_OFFSET, z: maxZ - PARK_CORNER_OFFSET },
   ];
   for (const c of candidates) {
     const overlaps = blocks.some(

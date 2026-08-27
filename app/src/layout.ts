@@ -27,10 +27,34 @@ export const HOUSE_COLS = 13;
 export const CELL_ROWS = 13;
 export const CELL_CAPACITY = HOUSE_COLS * CELL_ROWS;
 
+// Plaza block identity and house-scale clamp bounds.
+export const PLAZA_PROJECT_ID = "__plaza__";
+export const PLAZA_NAME = "Civic Plaza";
+export const MIN_HOUSE_SCALE = 1;
+export const MAX_HOUSE_SCALE = 6;
+const SCALE_PER_LOG_DECADE = 1.5;
+
+// Spiral geometry: ring 1 is four cardinal lanes plus four diagonal corners;
+// rings 2+ continue as a clockwise square spiral.
+const CARDINAL_LANES = 4;
+const RING_ONE_CELLS = 8;
+const RING_TWO_MIN = 2;
+
+// Extension-cell priority: ring distance dominates, then north, then west.
+const CELL_SCORE_RING = 1000;
+const CELL_SCORE_ROW = 10;
+
+// Street merging tolerance (coordinate quantization + collinear gap).
+const COORD_PRECISION = 100;
+const MERGE_EPSILON = 0.01;
+
 export interface Cell {
   cx: number;
   cz: number;
 }
+
+// The plaza always owns the origin cell.
+export const ORIGIN_CELL: Cell = { cx: 0, cz: 0 };
 
 export interface LayoutOpts {
   plaza?: { width: number; depth: number };
@@ -60,7 +84,10 @@ export interface InputProject {
 
 export function houseScale(tokensIn: number, tokensOut: number): number {
   const tokens = tokensIn + tokensOut;
-  return Math.max(1, Math.min(6, 1 + Math.log10(1 + tokens) * 1.5));
+  return Math.max(
+    MIN_HOUSE_SCALE,
+    Math.min(MAX_HOUSE_SCALE, 1 + Math.log10(1 + tokens) * SCALE_PER_LOG_DECADE),
+  );
 }
 
 export function rankProjects<T extends InputProject>(projects: T[]): T[] {
@@ -105,17 +132,17 @@ function ringCells(minRing: number, count: number): Cell[] {
 // N/E/S/W around the plaza, then the four diagonal corners, then rings 2+ as a
 // clockwise square spiral.
 export function spiralCell(rank: number): Cell {
-  if (rank < 4) {
+  if (rank < CARDINAL_LANES) {
     const card: readonly (readonly [number, number])[] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
     const [cx, cz] = card[rank]!;
     return { cx, cz };
   }
-  if (rank < 8) {
+  if (rank < RING_ONE_CELLS) {
     const diag: readonly (readonly [number, number])[] = [[1, -1], [1, 1], [-1, 1], [-1, -1]];
-    const [cx, cz] = diag[rank - 4]!;
+    const [cx, cz] = diag[rank - CARDINAL_LANES]!;
     return { cx, cz };
   }
-  return ringCells(2, rank - 7)[rank - 8]!;
+  return ringCells(RING_TWO_MIN, rank - (RING_ONE_CELLS - 1))[rank - RING_ONE_CELLS]!;
 }
 
 function cellKey(c: Cell): string {
@@ -131,8 +158,11 @@ function bestAdjacentFree(cells: Cell[], assigned: Set<string>): Cell | null {
     for (const [dx, dz] of dirs) {
       const n: Cell = { cx: c.cx + dx, cz: c.cz + dz };
       if (owned.has(cellKey(n)) || assigned.has(cellKey(n))) continue;
-      // Prefer closer to the plaza; ties go north, then west.
-      const score = Math.max(Math.abs(n.cx), Math.abs(n.cz)) * 1000 + n.cz * 10 + n.cx;
+      // Prefer closer to the plaza; ties go north (negative z), then west.
+      const score =
+        Math.max(Math.abs(n.cx), Math.abs(n.cz)) * CELL_SCORE_RING +
+        n.cz * CELL_SCORE_ROW +
+        n.cx;
       if (score < bestScore) {
         bestScore = score;
         best = n;
@@ -147,18 +177,18 @@ export function layoutCity(projects: InputProject[], opts?: LayoutOpts): PlacedB
   const ranked = rankProjects(projects);
   const blocks: PlacedBlock[] = [
     {
-      projectId: "__plaza__",
-      name: "Civic Plaza",
+      projectId: PLAZA_PROJECT_ID,
+      name: PLAZA_NAME,
       x: 0,
       z: 0,
       width: plaza.width,
       depth: plaza.depth,
       houses: [],
       kind: "plaza",
-      cells: [{ cx: 0, cz: 0 }],
+      cells: [ORIGIN_CELL],
     },
   ];
-  const assigned = new Set<string>(["0:0"]);
+  const assigned = new Set<string>([cellKey(ORIGIN_CELL)]);
   let ordinal = 0;
 
   const nextHome = (): Cell => {
@@ -210,7 +240,7 @@ function mergeRuns(streets: Street[]): Street[] {
   const byAxis = new Map<number, Street[]>();
   for (const s of streets) {
     const horizontal = s.width >= s.depth;
-    const key = Math.round(horizontal ? s.z * 100 : s.x * 100);
+    const key = Math.round(horizontal ? s.z * COORD_PRECISION : s.x * COORD_PRECISION);
     const group = byAxis.get(key);
     if (group) group.push(s);
     else byAxis.set(key, [s]);
@@ -223,7 +253,7 @@ function mergeRuns(streets: Street[]): Street[] {
     for (const next of sorted.slice(1)) {
       const curEnd = horizontal ? cur.x + cur.width / 2 : cur.z + cur.depth / 2;
       const nextStart = horizontal ? next.x - next.width / 2 : next.z - next.depth / 2;
-      if (Math.abs(nextStart - curEnd) < 0.01) {
+      if (Math.abs(nextStart - curEnd) < MERGE_EPSILON) {
         if (horizontal) cur.width = next.x + next.width / 2 - (cur.x - cur.width / 2);
         else cur.depth = next.z + next.depth / 2 - (cur.z - cur.depth / 2);
       } else {
@@ -243,13 +273,13 @@ function mergeRuns(streets: Street[]): Street[] {
 export function buildStreets(blocks: PlacedBlock[]): Street[] {
   if (blocks.length === 0) return [];
   const owner = new Map<string, PlacedBlock>();
-  for (const b of blocks) for (const c of b.cells) owner.set(`${c.cx}:${c.cz}`, b);
+  for (const b of blocks) for (const c of b.cells) owner.set(cellKey(c), b);
 
   const verticals: Street[] = [];
   const horizontals: Street[] = [];
   for (const b of blocks) {
     for (const c of b.cells) {
-      const east = owner.get(`${c.cx + 1}:${c.cz}`);
+      const east = owner.get(cellKey({ cx: c.cx + 1, cz: c.cz }));
       if (east && east !== b) {
         verticals.push({
           x: c.cx * CELL_PITCH + CELL_PITCH / 2,
@@ -258,7 +288,7 @@ export function buildStreets(blocks: PlacedBlock[]): Street[] {
           depth: CELL_PITCH,
         });
       }
-      const south = owner.get(`${c.cx}:${c.cz + 1}`);
+      const south = owner.get(cellKey({ cx: c.cx, cz: c.cz + 1 }));
       if (south && south !== b) {
         horizontals.push({
           x: c.cx * CELL_PITCH,
