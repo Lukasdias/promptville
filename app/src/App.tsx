@@ -6,6 +6,8 @@ import { StatsPanel } from "./components/hud/StatsPanel";
 import { DetailCard } from "./components/hud/DetailCard";
 import { HintBar } from "./components/hud/HintBar";
 import { HelpPanel } from "./components/hud/HelpPanel";
+import { TweakPanel } from "./components/hud/TweakPanel";
+import { LegendCard } from "./components/hud/LegendCard";
 import { LoadingState } from "./components/hud/LoadingState";
 import { MissingState } from "./components/hud/MissingState";
 
@@ -26,6 +28,8 @@ export default function App() {
       <DetailCard />
       <HintBar />
       <HelpPanel />
+      <TweakPanel />
+      <LegendCard />
       <LoadingState />
       <MissingState />
     </div>

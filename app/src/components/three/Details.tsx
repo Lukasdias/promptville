@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { PlacedBlock, Street } from "../../layout";
 import { environment } from "../../config";
+import { useApp } from "../../store";
 import { findIntersections } from "../../traffic";
 import {
   benchVoxels,
@@ -46,6 +47,7 @@ interface DetailSets {
 }
 
 export function Details({ blocks, streets }: { blocks: PlacedBlock[]; streets: Street[] }) {
+  const showScenery = useApp((s) => s.tweaks.showScenery);
   const sets = useMemo<DetailSets>(() => {
     if (blocks.length === 0) {
       return { bushes: [], flowers: [], mailboxes: [], signs: [], benches: [], fountain: [], hydrants: [], cones: [] };
@@ -123,6 +125,8 @@ export function Details({ blocks, streets }: { blocks: PlacedBlock[]; streets: S
 
     return { bushes, flowers, mailboxes, signs, benches, fountain, hydrants, cones };
   }, [blocks, streets]);
+
+  if (!showScenery) return null;
 
   return (
     <group>

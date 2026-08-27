@@ -31,6 +31,19 @@ describe("findIntersections", () => {
     const it = intersections.find((i) => Math.abs(i.x - v.x) < 0.01 && Math.abs(i.z - h.z) < 0.01);
     expect(it).toBeDefined();
   });
+
+  test("merges near-coincident junctions into a single intersection", () => {
+    const avenue = { x: 0, z: 0, width: 40, depth: 3.5 };
+    const v1 = { x: 5, z: 0, width: 3.5, depth: 12 };
+    const v2 = { x: 6.2, z: 0, width: 3.5, depth: 12 };
+    const merged = findIntersections([avenue, v1, v2]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].x).toBeCloseTo(5.6);
+
+    const far = { x: 15, z: 0, width: 3.5, depth: 12 };
+    const kept = findIntersections([avenue, v1, far]);
+    expect(kept).toHaveLength(2);
+  });
 });
 
 describe("TrafficController", () => {

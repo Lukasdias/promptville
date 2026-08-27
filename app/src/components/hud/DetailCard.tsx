@@ -5,6 +5,7 @@ import { useApp } from "../../store";
 export function DetailCard() {
   const selected = useApp((s) => s.selected);
   const clearSelection = useApp((s) => s.clearSelection);
+  const showDetailCard = useApp((s) => s.tweaks.showDetailCard);
 
   const spring = useSpring({
     opacity: selected ? 1 : 0,
@@ -14,7 +15,7 @@ export function DetailCard() {
     config: { tension: 300, friction: 22 },
   });
 
-  if (!selected) return null;
+  if (!selected || !showDetailCard) return null;
 
   const date = new Date(selected.timeCreated).toLocaleDateString(undefined, {
     year: "numeric",

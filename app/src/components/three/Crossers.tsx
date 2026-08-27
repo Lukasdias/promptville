@@ -4,6 +4,7 @@ import type { Group } from "three";
 import type { Street } from "../../layout";
 import type { Intersection, TrafficController } from "../../traffic";
 import { personVoxels } from "../../voxel";
+import { useApp } from "../../store";
 import { InstancedVoxels } from "./InstancedVoxels";
 
 const CROSS_SIZE = 0.15;
@@ -106,6 +107,8 @@ export function Crossers({
   controller: TrafficController;
 }) {
   const specs = useCrosserSpecs(intersections, streets);
+  const showTraffic = useApp((s) => s.tweaks.showTraffic);
+  if (!showTraffic) return null;
   return (
     <group>
       {specs.map((spec, i) => (

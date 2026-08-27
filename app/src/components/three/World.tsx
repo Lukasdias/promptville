@@ -4,6 +4,7 @@ import type { PlacedBlock, Street } from "../../layout";
 import { lampVoxels, treeVoxels } from "../../voxel";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { COLORS } from "../../theme";
+import { useApp } from "../../store";
 import { environment } from "../../config";
 import { isClearSpot, mulberry32 } from "../../placement";
 
@@ -20,6 +21,7 @@ export function World({
   streets: Street[];
 }) {
   const rand = useMemo(() => mulberry32(1337), []);
+  const showScenery = useApp((s) => s.tweaks.showScenery);
 
   const trees = useMemo(() => {
     const placed: { key: number; x: number; z: number; s: number }[] = [];
@@ -43,6 +45,8 @@ export function World({
     }
     return placed;
   }, [blocks, streets, rand]);
+
+  if (!showScenery) return null;
 
   return (
     <group>

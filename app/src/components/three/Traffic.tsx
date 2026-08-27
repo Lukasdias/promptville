@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 import type { Street } from "../../layout";
 import { traffic } from "../../config";
+import { useApp } from "../../store";
 import type { Intersection, TrafficController } from "../../traffic";
 import { planRoute, type RoadGraph } from "../../roadgraph";
 import { carVoxels, personVoxels, type Voxel } from "../../voxel";
@@ -19,7 +20,9 @@ const PUFF_COUNT = 4;
 
 const CAR_ACCEL = 3.5;
 const CAR_BRAKE = 7;
-const STOP_CLEAR = 0.18;
+// Cars stop this far before the intersection center so they never sit on the
+// traffic light or inside the crossing.
+const STOP_CLEAR = 2.0;
 const END_MARGIN = 0.4;
 
 // Spawn/despawn lifecycle for foot traffic — no wrapping teleports.
@@ -377,6 +380,8 @@ export function Traffic({
   graph: RoadGraph;
 }) {
   const specs = useTrafficSpecs(streets);
+  const showTraffic = useApp((s) => s.tweaks.showTraffic);
+  if (!showTraffic) return null;
   const cars = useCarSpecs();
 
   return (

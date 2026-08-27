@@ -30,7 +30,7 @@ const PIXEL_PAN_SCALE = 0.003;
 
 const HANDLED_KEYS = new Set([
   "w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright",
-  "q", "e", "r", "+", "-", "f", "home", "escape", "tab", "m",
+  "q", "e", "r", "+", "-", "f", "home", "escape", "tab", "m", "p",
 ]);
 
 export function CivCamera() {
@@ -40,6 +40,8 @@ export function CivCamera() {
   const selected = useApp((s) => s.selected);
   const helpOpen = useApp((s) => s.helpOpen);
   const toggleHelp = useApp((s) => s.toggleHelp);
+  const tweaksOpen = useApp((s) => s.tweaksOpen);
+  const toggleTweaks = useApp((s) => s.toggleTweaks);
   const clearSelection = useApp((s) => s.clearSelection);
 
   const { data } = useNeighborhood();
@@ -59,6 +61,10 @@ export function CivCamera() {
   useEffect(() => {
     helpOpenRef.current = helpOpen;
   }, [helpOpen]);
+  const tweaksOpenRef = useRef(tweaksOpen);
+  useEffect(() => {
+    tweaksOpenRef.current = tweaksOpen;
+  }, [tweaksOpen]);
   const selectedRef = useRef(selected);
   useEffect(() => {
     selectedRef.current = selected;
@@ -93,10 +99,13 @@ export function CivCamera() {
         goal.current.distance = zoomBy(goal.current.distance, 1 / 1.15);
       } else if (k === "-") {
         goal.current.distance = zoomBy(goal.current.distance, 1.15);
+      } else if (k === "p") {
+        toggleTweaks();
       } else if (k === "tab") {
         toggleHelp();
       } else if (k === "escape") {
         if (helpOpenRef.current) toggleHelp();
+        else if (tweaksOpenRef.current) toggleTweaks();
         else clearSelection();
       } else if (k === "m") {
         edgeScroll.current = !edgeScroll.current;
@@ -111,7 +120,7 @@ export function CivCamera() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [gl, blocks, projects, toggleHelp, clearSelection]);
+  }, [gl, blocks, projects, toggleHelp, toggleTweaks, clearSelection]);
 
   useEffect(() => {
     const el = gl.domElement;

@@ -1,12 +1,16 @@
 import { animated, useSpring } from "@react-spring/web";
+import { useApp } from "../../store";
 
 export function HintBar() {
+  const showHintBar = useApp((s) => s.tweaks.showHintBar);
   const { opacity, y } = useSpring({
     from: { opacity: 0, y: 14 },
     to: { opacity: 1, y: 0 },
     delay: 350,
     config: { tension: 200, friction: 24 },
   });
+
+  if (!showHintBar) return null;
 
   return (
     <animated.div

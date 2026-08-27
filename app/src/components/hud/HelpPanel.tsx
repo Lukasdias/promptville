@@ -40,7 +40,11 @@ const GROUPS: { title: string; rows: Row[] }[] = [
   },
   {
     title: "General",
-    rows: [{ keys: ["Tab"], label: "Toggle help" }],
+    rows: [
+      { keys: ["P"], label: "Tweak display" },
+      { keys: ["Gear"], label: "Tweak display" },
+      { keys: ["Tab"], label: "Toggle help" },
+    ],
   },
 ];
 

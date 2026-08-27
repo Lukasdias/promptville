@@ -108,6 +108,43 @@ describe("buildRoadGraph", () => {
     }
     expect(seen.size).toBe(graph.nodes.length);
   });
+
+  test("deep avenues from varied block sizes still leave no dead ends", () => {
+    const sessions = (n: number) => Array.from({ length: n }, () => ({ tokensIn: 10, tokensOut: 5 }));
+    const varied = [
+      { id: "big", name: "big", sessions: sessions(171) },
+      { id: "b", name: "b", sessions: sessions(80) },
+      { id: "c", name: "c", sessions: sessions(40) },
+      { id: "d", name: "d", sessions: sessions(4) },
+      { id: "e", name: "e", sessions: sessions(4) },
+      { id: "f", name: "f", sessions: sessions(4) },
+      { id: "g", name: "g", sessions: sessions(4) },
+      { id: "h", name: "h", sessions: sessions(4) },
+    ];
+    const blocks = layoutCity(varied);
+    const bounds = cityBounds(blocks)!;
+    const main = buildStreets(blocks);
+    const all = [...extendRoadsToRing(main, bounds), ...buildPerimeterRing(bounds)];
+    const inters = findIntersections(all);
+    const g2 = buildRoadGraph(all, inters);
+
+    for (const n of g2.nodes) {
+      expect(g2.adjacency[n.id].length).toBeGreaterThanOrEqual(2);
+    }
+    const seen = new Set<number>([0]);
+    const queue = [0];
+    while (queue.length > 0) {
+      const cur = queue.pop()!;
+      for (const eid of g2.adjacency[cur]) {
+        const nxt = g2.edges[eid].to;
+        if (!seen.has(nxt)) {
+          seen.add(nxt);
+          queue.push(nxt);
+        }
+      }
+    }
+    expect(seen.size).toBe(g2.nodes.length);
+  });
 });
 
 describe("planRoute", () => {

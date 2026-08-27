@@ -51,6 +51,17 @@ export function buildRoadGraph(streets: Street[], intersections: Intersection[])
   };
 
   for (const it of intersections) addNode(it.x, it.z, it.id);
+  // Road endpoints become nodes too; after ring/extension they coincide with
+  // junctions, but merged intersections may leave some ends without one.
+  for (const s of streets) {
+    if (s.width >= s.depth) {
+      addNode(s.x - s.width / 2, s.z, null);
+      addNode(s.x + s.width / 2, s.z, null);
+    } else {
+      addNode(s.x, s.z - s.depth / 2, null);
+      addNode(s.x, s.z + s.depth / 2, null);
+    }
+  }
 
   const edges: RoadEdge[] = [];
   const adjacency: number[][] = nodes.map(() => []);

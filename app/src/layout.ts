@@ -147,35 +147,44 @@ export function cityBounds(blocks: PlacedBlock[]): Bounds | null {
 }
 
 // A rectangular ring road just outside the city, connecting every avenue end and
-// vertical street so the road network has no dead ends.
+// vertical street so the road network has no dead ends. Roads extend to the
+// adjacent centerlines so corners meet at clean junction points.
 export function buildPerimeterRing(bounds: Bounds): Street[] {
   const spanX = bounds.maxX - bounds.minX;
   const spanZ = bounds.maxZ - bounds.minZ;
   const cx = (bounds.minX + bounds.maxX) / 2;
   const cz = (bounds.minZ + bounds.maxZ) / 2;
   return [
-    { x: cx, z: bounds.minZ - ROAD_WIDTH / 2, width: spanX + ROAD_WIDTH * 2, depth: ROAD_WIDTH },
-    { x: cx, z: bounds.maxZ + ROAD_WIDTH / 2, width: spanX + ROAD_WIDTH * 2, depth: ROAD_WIDTH },
-    { x: bounds.minX - ROAD_WIDTH / 2, z: cz, width: ROAD_WIDTH, depth: spanZ + ROAD_WIDTH * 2 },
-    { x: bounds.maxX + ROAD_WIDTH / 2, z: cz, width: ROAD_WIDTH, depth: spanZ + ROAD_WIDTH * 2 },
+    { x: cx, z: bounds.minZ - ROAD_WIDTH / 2, width: spanX + ROAD_WIDTH, depth: ROAD_WIDTH },
+    { x: cx, z: bounds.maxZ + ROAD_WIDTH / 2, width: spanX + ROAD_WIDTH, depth: ROAD_WIDTH },
+    { x: bounds.minX - ROAD_WIDTH / 2, z: cz, width: ROAD_WIDTH, depth: spanZ + ROAD_WIDTH },
+    { x: bounds.maxX + ROAD_WIDTH / 2, z: cz, width: ROAD_WIDTH, depth: spanZ + ROAD_WIDTH },
   ];
 }
 
 // Extends every road to the centerlines of the roads it meets, so all street
-// dead-ends become real crossings (no gap between rectangle ends and junctions).
+// dead-ends become real crossings. Avenues span the ring width; vertical streets
+// reach the centerline of the nearest avenue above and below (or the ring).
 export function extendRoadsToRing(streets: Street[], bounds: Bounds): Street[] {
   const ringX = bounds.minX - ROAD_WIDTH / 2;
   const ringX2 = bounds.maxX + ROAD_WIDTH / 2;
+  const ringZ = bounds.minZ - ROAD_WIDTH / 2;
+  const ringZ2 = bounds.maxZ + ROAD_WIDTH / 2;
+  const horizontals = streets.filter((s) => s.width >= s.depth);
 
   return streets.map((s) => {
     if (s.width >= s.depth) {
       // Avenues span the full ring width.
       return { x: (ringX + ringX2) / 2, z: s.z, width: ringX2 - ringX, depth: s.depth };
     }
-    // Vertical streets extend by half a road on each end to meet the avenue/ring
-    // centerlines above and below.
+    // Vertical street: reach the centerline of the nearest avenue above and below.
     const top = s.z - s.depth / 2;
     const bottom = s.z + s.depth / 2;
-    return { x: s.x, z: (top + bottom) / 2, depth: bottom - top + ROAD_WIDTH, width: s.width };
+    const covering = horizontals.filter((h) => s.x > h.x - h.width / 2 && s.x < h.x + h.width / 2);
+    const above = covering.filter((h) => h.z < top).sort((a, b) => b.z - a.z)[0];
+    const below = covering.filter((h) => h.z > bottom).sort((a, b) => a.z - b.z)[0];
+    const newTop = above ? Math.min(top, above.z) : ringZ;
+    const newBottom = below ? Math.max(bottom, below.z) : ringZ2;
+    return { x: s.x, z: (newTop + newBottom) / 2, depth: newBottom - newTop, width: s.width };
   });
 }

@@ -1,11 +1,16 @@
 import { animated, useSpring } from "@react-spring/web";
+import { useApp } from "../../store";
 
 export function Header() {
+  const toggleTweaks = useApp((s) => s.toggleTweaks);
+  const showHeader = useApp((s) => s.tweaks.showHeader);
   const { opacity, y } = useSpring({
     from: { opacity: 0, y: -18 },
     to: { opacity: 1, y: 0 },
     config: { tension: 220, friction: 24 },
   });
+
+  if (!showHeader) return null;
 
   return (
     <animated.header
@@ -18,6 +23,14 @@ export function Header() {
       <h1 className="font-display text-3xl font-semibold tracking-tight text-ink drop-shadow-[2px_2px_0_rgba(255,255,255,0.8)]">
         Promptville
       </h1>
+      <button
+        type="button"
+        onClick={toggleTweaks}
+        aria-label="Tweak display"
+        className="pointer-events-auto ml-1 grid h-10 w-10 place-items-center rounded-full border-[3px] border-ink bg-cream text-lg transition-colors hover:bg-ink/10"
+      >
+        ⚙️
+      </button>
     </animated.header>
   );
 }
