@@ -2,8 +2,11 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 import type { Street } from "../../layout";
+import { traffic } from "../../config";
+import { TrafficController, findIntersections, type Intersection } from "../../traffic";
 import { carVoxels, personVoxels, type Voxel } from "../../voxel";
 import { InstancedVoxels } from "./InstancedVoxels";
+import { TrafficLights } from "./TrafficLights";
 
 const CAR_COLORS = ["#ff8fa3", "#ffd166", "#7fb6ff", "#b0f2b4", "#ffa86b"];
 const RUNNER_COLORS = ["#ffb3ba", "#bae1ff", "#baffc9", "#ffffba", "#d4baff", "#ffd1dc"];
@@ -11,6 +14,10 @@ const RUNNER_COLORS = ["#ffb3ba", "#bae1ff", "#baffc9", "#ffffba", "#d4baff", "#
 const CAR_SIZE = 0.2;
 const PUFF_VOXELS: Voxel[] = [{ x: 0, y: 0, z: 0, color: "#dcdcdc" }];
 const PUFF_COUNT = 4;
+
+const CAR_ACCEL = 3.5;
+const CAR_BRAKE = 7;
+const STOP_CLEAR = 0.18;
 
 function mulberry32(seed: number) {
   return () => {
@@ -38,7 +45,7 @@ function useTrafficSpecs(streets: Street[]): TrafficSpec[] {
     const rand = mulberry32(777);
     const horizontals = streets.filter((s) => s.width >= s.depth);
 
-    const cars: TrafficSpec[] = Array.from({ length: 5 }, (_, i) => {
+    const cars: TrafficSpec[] = Array.from({ length: traffic.cars }, (_, i) => {
       const street = (horizontals[i % horizontals.length] ?? streets[i % streets.length])!;
       return {
         street,
@@ -51,7 +58,7 @@ function useTrafficSpecs(streets: Street[]): TrafficSpec[] {
       };
     });
 
-    const runners: TrafficSpec[] = Array.from({ length: 6 }, (_, i) => {
+    const runners: TrafficSpec[] = Array.from({ length: traffic.runners }, (_, i) => {
       const street = streets[(i * 7) % streets.length]!;
       return {
         street,
@@ -76,8 +83,7 @@ interface Puff {
   oz: number;
 }
 
-// Random smoke puffs that trail behind a moving car. Puffs live in world space,
-// reading the car's position each frame so they follow the vehicle's motion.
+// Random smoke puffs that trail behind a moving car (world space).
 function VehicleSmoke({
   carRef,
   dir,
@@ -152,17 +158,73 @@ function VehicleSmoke({
   );
 }
 
-function Mover({ spec }: { spec: TrafficSpec }) {
+function CarMover({
+  spec,
+  controller,
+  lights,
+}: {
+  spec: TrafficSpec;
+  controller: TrafficController;
+  lights: { x: number; id: number }[];
+}) {
   const ref = useRef<Group>(null);
-  const t = useRef(Math.random() * 100);
-
-  const voxels = useMemo<Voxel[]>(
-    () => (spec.kind === "car" ? carVoxels(spec.color) : personVoxels(spec.color)),
-    [spec.kind, spec.color],
-  );
-
+  const pos = useRef((Math.random() - 0.5) * (spec.street.width - 2));
+  const speed = useRef(0);
   const horizontal = spec.street.width >= spec.street.depth;
   const length = horizontal ? spec.street.width : spec.street.depth;
+
+  const voxels = useMemo(() => carVoxels(spec.color), [spec.color]);
+
+  useFrame((_, delta) => {
+    const g = ref.current;
+    if (!g) return;
+    const dir = spec.dir;
+
+    const next = lights.find((l) => (l.x - pos.current) * dir > 0.05);
+    let v = speed.current;
+    if (next && !controller.greenFor(next.id, "x")) {
+      const dist = (next.x - pos.current) * dir;
+      if (dist > STOP_CLEAR) {
+        v = Math.max(0, Math.min(v, Math.sqrt(2 * CAR_BRAKE * (dist - STOP_CLEAR))));
+      } else {
+        v = 0;
+      }
+    } else {
+      v = Math.min(spec.speed, v + CAR_ACCEL * delta);
+    }
+
+    pos.current += v * dir * delta;
+    if (pos.current > length / 2) pos.current -= length;
+    if (pos.current < -length / 2) pos.current += length;
+    speed.current = v;
+
+    if (horizontal) {
+      g.position.x = spec.street.x + pos.current;
+      g.position.z = spec.street.z + spec.lane;
+      g.rotation.y = spec.dir > 0 ? 0 : Math.PI;
+    } else {
+      g.position.z = spec.street.z + pos.current;
+      g.position.x = spec.street.x + spec.lane;
+      g.rotation.y = spec.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+    }
+  });
+
+  return (
+    <>
+      <group ref={ref}>
+        <InstancedVoxels voxels={voxels} voxelSize={spec.size} />
+      </group>
+      <VehicleSmoke carRef={ref} dir={spec.dir} axis={horizontal ? "x" : "z"} />
+    </>
+  );
+}
+
+function RunnerMover({ spec }: { spec: TrafficSpec }) {
+  const ref = useRef<Group>(null);
+  const t = useRef(Math.random() * 100);
+  const horizontal = spec.street.width >= spec.street.depth;
+  const length = horizontal ? spec.street.width : spec.street.depth;
+  const voxels = useMemo(() => personVoxels(spec.color), [spec.color]);
 
   useFrame((_, delta) => {
     const g = ref.current;
@@ -181,24 +243,54 @@ function Mover({ spec }: { spec: TrafficSpec }) {
   });
 
   return (
-    <>
-      <group ref={ref}>
-        <InstancedVoxels voxels={voxels} voxelSize={spec.size} />
-      </group>
-      {spec.kind === "car" && (
-        <VehicleSmoke carRef={ref} dir={spec.dir} axis={horizontal ? "x" : "z"} />
-      )}
-    </>
+    <group ref={ref}>
+      <InstancedVoxels voxels={voxels} voxelSize={spec.size} />
+    </group>
   );
 }
 
 export function Traffic({ streets }: { streets: Street[] }) {
   const specs = useTrafficSpecs(streets);
+
+  const intersections = useMemo(() => findIntersections(streets), [streets]);
+  const controller = useMemo(
+    () => new TrafficController(intersections, traffic.cycle),
+    [intersections],
+  );
+
+  const lightsByStreet = useMemo(() => {
+    const map = new Map<number, { x: number; id: number }[]>();
+    for (const spec of specs) {
+      if (spec.kind !== "car") continue;
+      const horizontal = spec.street.width >= spec.street.depth;
+      const onStreet = intersections.filter((it) =>
+        horizontal ? Math.abs(it.z - spec.street.z) < 0.01 : Math.abs(it.x - spec.street.x) < 0.01,
+      );
+      map.set(
+        spec.street.x * 1000 + spec.street.z,
+        onStreet
+          .map((it) => ({ x: it.x, id: it.id }))
+          .sort((a, b) => a.x - b.x),
+      );
+    }
+    return map;
+  }, [specs, intersections]);
+
   return (
     <group>
-      {specs.map((spec, i) => (
-        <Mover key={i} spec={spec} />
-      ))}
+      <TrafficLights controller={controller} intersections={intersections} />
+      {specs.map((spec, i) =>
+        spec.kind === "car" ? (
+          <CarMover
+            key={i}
+            spec={spec}
+            controller={controller}
+            lights={lightsByStreet.get(spec.street.x * 1000 + spec.street.z) ?? []}
+          />
+        ) : (
+          <RunnerMover key={i} spec={spec} />
+        ),
+      )}
     </group>
   );
 }

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { animated, useSpring } from "@react-spring/web";
 import { useApp } from "../../store";
 
@@ -33,23 +34,49 @@ export function DetailCard() {
       >
         ✕
       </button>
-      <h2 className="font-display text-lg font-semibold leading-snug">{selected.title}</h2>
+      <h2 className="pr-8 font-display text-lg font-semibold leading-snug">{selected.title}</h2>
       <dl className="mt-2 space-y-1 text-sm">
         <Row k="Model" v={selected.model ?? "unknown"} />
         <Row k="Agent" v={selected.agent ?? "—"} />
-        <Row k="Cost" v={`$${selected.cost.toFixed(4)}`} />
-        <Row k="Tokens" v={`${selected.tokensIn} in / ${selected.tokensOut} out`} />
+        <Row
+          k="Cost"
+          v={<AnimatedNumber value={selected.cost} format={(n) => `$${n.toFixed(4)}`} />}
+        />
+        <Row
+          k="Tokens"
+          v={
+            <>
+              <AnimatedNumber value={selected.tokensIn} format={(n) => Math.round(n).toLocaleString()} /> in /{" "}
+              <AnimatedNumber value={selected.tokensOut} format={(n) => Math.round(n).toLocaleString()} /> out
+            </>
+          }
+        />
         <Row k="Date" v={date} />
       </dl>
     </animated.div>
   );
 }
 
-function Row({ k, v }: { k: string; v: string }) {
+function Row({ k, v }: { k: string; v: ReactNode }) {
   return (
     <div className="flex justify-between gap-2">
       <dt className="opacity-70">{k}</dt>
       <dd className="text-right font-bold">{v}</dd>
     </div>
   );
+}
+
+function AnimatedNumber({
+  value,
+  format,
+}: {
+  value: number;
+  format: (n: number) => string;
+}) {
+  const { n } = useSpring({
+    from: { n: 0 },
+    to: { n: value },
+    config: { tension: 160, friction: 26 },
+  });
+  return <animated.span>{n.to((v) => format(v))}</animated.span>;
 }

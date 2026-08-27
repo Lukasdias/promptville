@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import type { PlacedBlock, Street } from "../../layout";
+import { environment } from "../../config";
+import { findIntersections } from "../../traffic";
 import {
   benchVoxels,
   bushVoxels,
@@ -67,32 +69,27 @@ export function Details({ blocks, streets }: { blocks: PlacedBlock[]; streets: S
     };
 
     const bushes: Voxel[] = [];
-    for (const p of placeScattered(18, 0.5)) {
+    for (const p of placeScattered(environment.bushes, 0.7)) {
       for (const v of placeVoxels(bushVoxels(), p.x, p.z, BUSH_SIZE)) bushes.push(v);
     }
 
     const flowers: Voxel[] = [];
-    const flowerSpots = placeScattered(5, 0.6);
+    const flowerSpots = placeScattered(environment.flowers, 0.8);
     if (park) flowerSpots.push({ x: park.x + 4.5, z: park.z - 4 }, { x: park.x - 4, z: park.z + 3.5 });
     for (const p of flowerSpots) {
       for (const v of placeVoxels(flowersVoxels(), p.x, p.z, FLOWER_SIZE)) flowers.push(v);
     }
 
     const mailboxes: Voxel[] = [];
-    for (const p of placeScattered(24, 0.5)) {
+    for (const p of placeScattered(environment.mailboxes, 0.8)) {
       for (const v of placeVoxels(mailboxVoxels(), p.x, p.z, MAILBOX_SIZE)) mailboxes.push(v);
     }
 
+    // Street-name signs at intersection corners, not in the middle of the road.
     const signs: Voxel[] = [];
-    const horizontals = streets.filter((s) => s.width >= s.depth).slice(0, 4);
-    const verticals = streets.filter((s) => s.width < s.depth).slice(0, 2);
-    for (const s of horizontals) {
-      const x = s.x + s.width / 2 - 1.2;
-      for (const v of placeVoxels(signVoxels(), x, s.z, SIGN_SIZE)) signs.push(v);
-    }
-    for (const s of verticals) {
-      const z = s.z + s.depth / 2 - 1.2;
-      for (const v of placeVoxels(signVoxels(), s.x, z, SIGN_SIZE)) signs.push(v);
+    for (const it of findIntersections(streets)) {
+      const corner = { x: it.x + 0.9, z: it.z + 0.9 };
+      for (const v of placeVoxels(signVoxels(), corner.x, corner.z, SIGN_SIZE)) signs.push(v);
     }
 
     const benches: Voxel[] = [];
@@ -110,12 +107,12 @@ export function Details({ blocks, streets }: { blocks: PlacedBlock[]; streets: S
       : [];
 
     const hydrants: Voxel[] = [];
-    for (const p of placeScattered(6, 0.4)) {
+    for (const p of placeScattered(environment.hydrants, 0.6)) {
       for (const v of placeVoxels(hydrantVoxels(), p.x, p.z, HYDRANT_SIZE)) hydrants.push(v);
     }
 
     const cones: Voxel[] = [];
-    for (let i = 0; i < 4 && streets.length > 0; i++) {
+    for (let i = 0; i < environment.cones && streets.length > 0; i++) {
       const s = streets[(i * 3) % streets.length]!;
       const horizontal = s.width >= s.depth;
       const offset = 0.55;

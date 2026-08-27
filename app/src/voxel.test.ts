@@ -15,6 +15,7 @@ import {
   fountainVoxels,
   hydrantVoxels,
   coneVoxels,
+  trafficLightVoxels,
   DOOR_COLOR,
   WINDOW_COLOR,
   CHIMNEY_COLOR,
@@ -195,5 +196,11 @@ describe("environmental blueprints", () => {
     const voxels = coneVoxels();
     expect(voxels).toHaveLength(3);
     expect(voxels.every((v) => v.color === CONE_COLOR)).toBe(true);
+  });
+
+  test("traffic light is a pole with a lamp box on top", () => {
+    const voxels = trafficLightVoxels();
+    expect(voxels).toHaveLength(5);
+    expect(voxels.filter((v) => v.y === 4)).toHaveLength(1);
   });
 });

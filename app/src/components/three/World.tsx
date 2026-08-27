@@ -4,6 +4,7 @@ import type { PlacedBlock, Street } from "../../layout";
 import { lampVoxels, treeVoxels } from "../../voxel";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { COLORS } from "../../theme";
+import { environment } from "../../config";
 import { isClearSpot, mulberry32 } from "../../placement";
 
 const TREE_SIZE = 0.22;
@@ -22,7 +23,7 @@ export function World({
 
   const trees = useMemo(() => {
     const placed: { key: number; x: number; z: number; s: number }[] = [];
-    for (let key = 0; placed.length < 45 && key < 600; key++) {
+    for (let key = 0; placed.length < environment.trees && key < 700; key++) {
       const x = (rand() - 0.5) * 2 * SPREAD;
       const z = (rand() - 0.5) * 2 * SPREAD;
       if (!isClearSpot(x, z, blocks, streets, TREE_PAD)) continue;
@@ -34,10 +35,10 @@ export function World({
 
   const lamps = useMemo(() => {
     const placed: { key: number; x: number; z: number }[] = [];
-    for (let key = 0; placed.length < 8 && key < 400; key++) {
+    for (let key = 0; placed.length < environment.lamps && key < 400; key++) {
       const x = (rand() - 0.5) * 2 * SPREAD;
       const z = (rand() - 0.5) * 2 * SPREAD;
-      if (!isClearSpot(x, z, blocks, streets, 0.5)) continue;
+      if (!isClearSpot(x, z, blocks, streets, 0.7)) continue;
       placed.push({ key, x, z });
     }
     return placed;

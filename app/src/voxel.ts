@@ -29,6 +29,10 @@ export const FOUNTAIN_STONE = "#d8d4c8";
 export const FOUNTAIN_WATER = "#7fc9ff";
 export const HYDRANT_COLOR = "#e8503a";
 export const CONE_COLOR = "#ff9f1c";
+export const TRAFFIC_POLE = "#3c3a42";
+export const TRAFFIC_BOX = "#222222";
+export const TRAFFIC_GREEN = "#3ddc64";
+export const TRAFFIC_RED = "#ff5252";
 
 export interface HouseVoxelOptions {
   body: string;
@@ -240,6 +244,16 @@ export function coneVoxels(color: string = CONE_COLOR): Voxel[] {
   voxels.push({ x: 0, y: 0, z: 0, color });
   voxels.push({ x: 0, y: 1, z: 0, color });
   voxels.push({ x: 0, y: 2, z: 0, color });
+  return voxels;
+}
+
+export function trafficLightVoxels(
+  pole: string = TRAFFIC_POLE,
+  box: string = TRAFFIC_BOX,
+): Voxel[] {
+  const voxels: Voxel[] = [];
+  for (let y = 0; y < 4; y++) voxels.push({ x: 0, y, z: 0, color: pole });
+  voxels.push({ x: 0, y: 4, z: 0, color: box });
   return voxels;
 }
 
