@@ -14,6 +14,7 @@ import {
   GLOW_COLOR,
   SKIN_COLOR,
   SNOW_COLOR,
+  WHEEL_COLOR,
 } from "./voxel";
 
 describe("houseVoxels", () => {
@@ -117,10 +118,12 @@ describe("personVoxels / carVoxels / placeVoxels", () => {
     expect(voxels[voxels.length - 1].color).toBe(SKIN_COLOR);
   });
 
-  test("car is a low body with a cabin", () => {
+  test("car is a wide chassis with visible wheels and a cabin", () => {
     const voxels = carVoxels("#ff8fa3");
-    expect(voxels).toHaveLength(6);
-    expect(voxels.filter((v) => v.color === "#ff8fa3")).toHaveLength(4);
+    expect(voxels).toHaveLength(12);
+    expect(voxels.filter((v) => v.color === WHEEL_COLOR)).toHaveLength(4);
+    expect(voxels.filter((v) => v.color === "#ff8fa3")).toHaveLength(6);
+    expect(voxels.filter((v) => v.color === WINDOW_COLOR)).toHaveLength(2);
   });
 
   test("placeVoxels offsets a pattern onto an absolute base at a given size", () => {

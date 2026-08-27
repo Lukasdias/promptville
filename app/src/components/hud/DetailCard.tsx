@@ -1,8 +1,18 @@
+import { animated, useSpring } from "@react-spring/web";
 import { useApp } from "../../store";
 
 export function DetailCard() {
   const selected = useApp((s) => s.selected);
   const clearSelection = useApp((s) => s.clearSelection);
+
+  const spring = useSpring({
+    opacity: selected ? 1 : 0,
+    transform: selected
+      ? "translate(-50%, 0px) scale(1)"
+      : "translate(-50%, 34px) scale(0.86)",
+    config: { tension: 300, friction: 22 },
+  });
+
   if (!selected) return null;
 
   const date = new Date(selected.timeCreated).toLocaleDateString(undefined, {
@@ -12,7 +22,10 @@ export function DetailCard() {
   });
 
   return (
-    <div className="paper-card absolute bottom-16 left-1/2 w-80 -translate-x-1/2 p-4 font-body text-ink">
+    <animated.div
+      className="paper-card absolute bottom-16 left-1/2 w-80 p-4 font-body text-ink"
+      style={{ opacity: spring.opacity, transform: spring.transform }}
+    >
       <button
         onClick={clearSelection}
         className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full border-2 border-ink/50 text-sm hover:bg-ink/10"
@@ -28,7 +41,7 @@ export function DetailCard() {
         <Row k="Tokens" v={`${selected.tokensIn} in / ${selected.tokensOut} out`} />
         <Row k="Date" v={date} />
       </dl>
-    </div>
+    </animated.div>
   );
 }
 

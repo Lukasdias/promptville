@@ -5,6 +5,7 @@ import { Header } from "./components/hud/Header";
 import { StatsPanel } from "./components/hud/StatsPanel";
 import { DetailCard } from "./components/hud/DetailCard";
 import { HintBar } from "./components/hud/HintBar";
+import { LoadingState } from "./components/hud/LoadingState";
 import { MissingState } from "./components/hud/MissingState";
 
 export default function App() {
@@ -29,6 +30,7 @@ export default function App() {
       <StatsPanel />
       <DetailCard />
       <HintBar />
+      <LoadingState />
       <MissingState />
     </div>
   );

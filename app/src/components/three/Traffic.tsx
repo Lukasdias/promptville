@@ -8,6 +8,10 @@ import { InstancedVoxels } from "./InstancedVoxels";
 const CAR_COLORS = ["#ff8fa3", "#ffd166", "#7fb6ff", "#b0f2b4", "#ffa86b"];
 const RUNNER_COLORS = ["#ffb3ba", "#bae1ff", "#baffc9", "#ffffba", "#d4baff", "#ffd1dc"];
 
+const CAR_SIZE = 0.2;
+const PUFF_VOXELS: Voxel[] = [{ x: 0, y: 0, z: 0, color: "#dcdcdc" }];
+const PUFF_COUNT = 4;
+
 function mulberry32(seed: number) {
   return () => {
     seed |= 0;
@@ -40,7 +44,7 @@ function useTrafficSpecs(streets: Street[]): TrafficSpec[] {
         street,
         kind: "car",
         color: CAR_COLORS[i % CAR_COLORS.length],
-        size: 0.12,
+        size: CAR_SIZE,
         speed: 2.4 + rand() * 1.6,
         dir: i % 2 === 0 ? 1 : -1,
         lane: 0,
@@ -62,6 +66,90 @@ function useTrafficSpecs(streets: Street[]): TrafficSpec[] {
 
     return [...cars, ...runners];
   }, [streets]);
+}
+
+interface Puff {
+  active: boolean;
+  age: number;
+  life: number;
+  ox: number;
+  oz: number;
+}
+
+// Random smoke puffs that trail behind a moving car. Puffs live in world space,
+// reading the car's position each frame so they follow the vehicle's motion.
+function VehicleSmoke({
+  carRef,
+  dir,
+  axis,
+}: {
+  carRef: { current: Group | null };
+  dir: 1 | -1;
+  axis: "x" | "z";
+}) {
+  const puffs = useRef<Puff[]>(
+    Array.from({ length: PUFF_COUNT }, () => ({ active: false, age: 0, life: 0, ox: 0, oz: 0 })),
+  );
+  const refs = useRef<(Group | null)[]>([]);
+  const emitIn = useRef(0);
+
+  useFrame((_, delta) => {
+    const car = carRef.current;
+    if (!car) return;
+    emitIn.current -= delta;
+
+    const idle = puffs.current.find((p) => !p.active);
+    if (emitIn.current <= 0 && idle) {
+      idle.active = true;
+      idle.age = 0;
+      idle.life = 0.5 + Math.random() * 0.5;
+      idle.ox = axis === "x" ? -dir * 0.5 : 0;
+      idle.oz = axis === "z" ? -dir * 0.5 : 0;
+      emitIn.current = 0.5 + Math.random() * 1.0;
+    }
+
+    for (let i = 0; i < puffs.current.length; i++) {
+      const p = puffs.current[i];
+      const g = refs.current[i];
+      if (!g) continue;
+      if (!p.active) {
+        g.visible = false;
+        continue;
+      }
+      p.age += delta;
+      if (p.age >= p.life) {
+        p.active = false;
+        g.visible = false;
+        continue;
+      }
+      const t = p.age / p.life;
+      const back = axis === "x" ? -dir : 0;
+      const sideways = axis === "z" ? -dir : 0;
+      const wobble = Math.sin(p.age * 3) * 0.15;
+      const x = car.position.x + p.ox + back * t * 0.7 + (axis === "z" ? wobble : 0);
+      const z = car.position.z + p.oz + sideways * t * 0.7 + (axis === "x" ? wobble : 0);
+      const y = car.position.y + 0.3 + t * 0.9;
+      g.position.set(x, y, z);
+      g.scale.setScalar(0.15 + t * 0.6);
+      g.visible = true;
+    }
+  });
+
+  return (
+    <>
+      {Array.from({ length: PUFF_COUNT }, (_, i) => (
+        <group
+          key={i}
+          ref={(el) => {
+            refs.current[i] = el;
+          }}
+          visible={false}
+        >
+          <InstancedVoxels voxels={PUFF_VOXELS} voxelSize={0.07} />
+        </group>
+      ))}
+    </>
+  );
 }
 
 function Mover({ spec }: { spec: TrafficSpec }) {
@@ -93,9 +181,14 @@ function Mover({ spec }: { spec: TrafficSpec }) {
   });
 
   return (
-    <group ref={ref}>
-      <InstancedVoxels voxels={voxels} voxelSize={spec.size} />
-    </group>
+    <>
+      <group ref={ref}>
+        <InstancedVoxels voxels={voxels} voxelSize={spec.size} />
+      </group>
+      {spec.kind === "car" && (
+        <VehicleSmoke carRef={ref} dir={spec.dir} axis={horizontal ? "x" : "z"} />
+      )}
+    </>
   );
 }
 

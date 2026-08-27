@@ -138,11 +138,23 @@ export function personVoxels(shirt: string, skin: string = SKIN_COLOR): Voxel[] 
   return voxels;
 }
 
-export function carVoxels(body: string, window: string = WINDOW_COLOR): Voxel[] {
+export const WHEEL_COLOR = "#2b2b2b";
+
+export function carVoxels(body: string, window: string = WINDOW_COLOR, wheel: string = WHEEL_COLOR): Voxel[] {
   const voxels: Voxel[] = [];
-  voxels.push({ x: -1, y: 0, z: 0, color: body });
-  voxels.push({ x: 0, y: 0, z: 0, color: body });
-  voxels.push({ x: 1, y: 0, z: 0, color: body });
+  // Base chassis 3×3, leaving the four corners for the wheels
+  for (let x = -1; x <= 1; x++) {
+    for (let z = -1; z <= 1; z++) {
+      if (Math.abs(x) === 1 && Math.abs(z) === 1) continue;
+      voxels.push({ x, y: 0, z, color: body });
+    }
+  }
+  // Visible wheels at the four corners
+  voxels.push({ x: -1, y: 0, z: -1, color: wheel });
+  voxels.push({ x: 1, y: 0, z: -1, color: wheel });
+  voxels.push({ x: -1, y: 0, z: 1, color: wheel });
+  voxels.push({ x: 1, y: 0, z: 1, color: wheel });
+  // Cabin with windshield and rear window
   voxels.push({ x: -1, y: 1, z: 0, color: window });
   voxels.push({ x: 0, y: 1, z: 0, color: body });
   voxels.push({ x: 1, y: 1, z: 0, color: window });

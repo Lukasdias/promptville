@@ -1,3 +1,4 @@
+import { animated, useSpring } from "@react-spring/web";
 import { useNeighborhood } from "../../query";
 
 function fmtCost(c: number): string {
@@ -12,11 +13,19 @@ function fmtTokens(n: number): string {
 
 export function StatsPanel() {
   const { data } = useNeighborhood();
+  const spring = useSpring({
+    opacity: data ? 1 : 0,
+    transform: data ? "translateX(0px)" : "translateX(44px)",
+    config: { tension: 220, friction: 26 },
+  });
   if (!data) return null;
   const { stats } = data;
 
   return (
-    <aside className="paper-card absolute right-4 top-4 w-64 p-4 font-body text-ink">
+    <animated.aside
+      className="paper-card absolute right-4 top-4 w-64 p-4 font-body text-ink"
+      style={{ opacity: spring.opacity, transform: spring.transform }}
+    >
       <h2 className="font-display text-lg font-semibold">City Stats</h2>
       <dl className="mt-2 space-y-1 text-sm">
         <Row k="Sessions" v={String(stats.totalSessions)} />
@@ -43,7 +52,7 @@ export function StatsPanel() {
           </li>
         ))}
       </ul>
-    </aside>
+    </animated.aside>
   );
 }
 
