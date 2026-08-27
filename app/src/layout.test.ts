@@ -7,6 +7,8 @@ import {
   HOUSE_PAD,
   ROAD_WIDTH,
   CIVIC_PLAZA,
+  spiralCell,
+  rankProjects,
 } from "./layout";
 
 const projects = [
@@ -148,5 +150,54 @@ describe("houseScale", () => {
     expect(houseScale(0, 0)).toBeCloseTo(1);
     expect(houseScale(100, 100)).toBeGreaterThan(1);
     expect(houseScale(1_000_000, 1_000_000)).toBeLessThanOrEqual(6);
+  });
+});
+
+describe("spiralCell", () => {
+  test("first four ranks are the cardinal lanes N,E,S,W", () => {
+    expect(spiralCell(0)).toEqual({ cx: 0, cz: -1 }); // N
+    expect(spiralCell(1)).toEqual({ cx: 1, cz: 0 });  // E
+    expect(spiralCell(2)).toEqual({ cx: 0, cz: 1 });  // S
+    expect(spiralCell(3)).toEqual({ cx: -1, cz: 0 }); // W
+  });
+
+  test("ranks 4-7 are the diagonal corners", () => {
+    expect(spiralCell(4)).toEqual({ cx: 1, cz: -1 }); // NE
+    expect(spiralCell(5)).toEqual({ cx: 1, cz: 1 });  // SE
+    expect(spiralCell(6)).toEqual({ cx: -1, cz: 1 }); // SW
+    expect(spiralCell(7)).toEqual({ cx: -1, cz: -1 }); // NW
+  });
+
+  test("ranks 8+ are unique ring-2 cells", () => {
+    const cells = Array.from({ length: 40 }, (_, i) => spiralCell(i));
+    const keys = new Set(cells.map((c) => `${c.cx}:${c.cz}`));
+    expect(keys.size).toBe(40);
+    for (let i = 8; i < 40; i++) {
+      expect(Math.max(Math.abs(cells[i]!.cx), Math.abs(cells[i]!.cz))).toBeGreaterThanOrEqual(2);
+    }
+  });
+});
+
+describe("rankProjects", () => {
+  const s = (id: string, timeCreated: number) => ({ id, tokensIn: 1, tokensOut: 1, timeCreated });
+  const projects = [
+    { id: "a", name: "A", sessions: [s("s1", 2), s("s2", 5)] },
+    { id: "b", name: "B", sessions: [s("s3", 9)] },
+    { id: "c", name: "C", sessions: [s("s4", 4), s("s5", 1), s("s6", 3)] },
+  ];
+
+  test("sorts by session count desc, then recency desc", () => {
+    expect(rankProjects(projects).map((p) => p.id)).toEqual(["c", "a", "b"]);
+  });
+
+  test("ties on count and recency break by name asc", () => {
+    const t = (id: string, name: string) => ({ id, name, sessions: [s("x", 1)] });
+    expect(rankProjects([t("2", "beta"), t("1", "alpha")]).map((p) => p.id)).toEqual(["1", "2"]);
+  });
+
+  test("does not mutate the input array", () => {
+    const before = projects.map((p) => p.id);
+    rankProjects(projects);
+    expect(projects.map((p) => p.id)).toEqual(before);
   });
 });

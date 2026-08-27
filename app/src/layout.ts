@@ -18,7 +18,21 @@ export interface PlacedBlock {
 export const HOUSE_SPACING = 1.7;
 export const HOUSE_PAD = 0.6;
 export const ROAD_WIDTH = 3.5;
+
+// Kept until the Task 2 layoutCity rewrite; removed by the spiral layout.
 export const BLOCKS_PER_ROW = 4;
+
+// Deterministic town grid: projects occupy cells on a uniform square lattice.
+// Streets run along cell boundaries; the plaza owns cell (0,0).
+export const CELL_PITCH = 28;
+export const HOUSE_COLS = 13;
+export const CELL_ROWS = 13;
+export const CELL_CAPACITY = HOUSE_COLS * CELL_ROWS;
+
+export interface Cell {
+  cx: number;
+  cz: number;
+}
 
 export interface LayoutOpts {
   plaza?: { width: number; depth: number };
@@ -33,15 +47,77 @@ export interface Street {
   depth: number;
 }
 
+export interface InputSession {
+  id: string;
+  tokensIn: number;
+  tokensOut: number;
+  timeCreated: number;
+}
+
+export interface InputProject {
+  id: string;
+  name: string;
+  sessions: InputSession[];
+}
+
 export function houseScale(tokensIn: number, tokensOut: number): number {
   const tokens = tokensIn + tokensOut;
   return Math.max(1, Math.min(6, 1 + Math.log10(1 + tokens) * 1.5));
 }
 
-interface InputProject {
-  id: string;
-  name: string;
-  sessions: { tokensIn: number; tokensOut: number }[];
+export function rankProjects<T extends InputProject>(projects: T[]): T[] {
+  return [...projects].sort((a, b) => {
+    if (b.sessions.length !== a.sessions.length) return b.sessions.length - a.sessions.length;
+    const aLast = a.sessions.reduce((m, s) => Math.max(m, s.timeCreated), 0);
+    const bLast = b.sessions.reduce((m, s) => Math.max(m, s.timeCreated), 0);
+    if (bLast !== aLast) return bLast - aLast;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function* squareSpiral(): Generator<Cell> {
+  let x = 0;
+  let z = 0;
+  let dir = 0;
+  const steps: readonly (readonly [number, number])[] = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+  yield { cx: x, cz: z };
+  for (let side = 1; ; side++) {
+    for (let i = 0; i < 2; i++) {
+      for (let j = 0; j < side; j++) {
+        x += steps[dir]![0];
+        z += steps[dir]![1];
+        yield { cx: x, cz: z };
+      }
+      dir = (dir + 1) % 4;
+    }
+  }
+}
+
+function ringCells(minRing: number, count: number): Cell[] {
+  const out: Cell[] = [];
+  for (const c of squareSpiral()) {
+    if (Math.max(Math.abs(c.cx), Math.abs(c.cz)) < minRing) continue;
+    out.push(c);
+    if (out.length === count) break;
+  }
+  return out;
+}
+
+// Home cell for a project rank (0-based). Ring 1 is the four cardinal lanes
+// N/E/S/W around the plaza, then the four diagonal corners, then rings 2+ as a
+// clockwise square spiral.
+export function spiralCell(rank: number): Cell {
+  if (rank < 4) {
+    const card: readonly (readonly [number, number])[] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+    const [cx, cz] = card[rank]!;
+    return { cx, cz };
+  }
+  if (rank < 8) {
+    const diag: readonly (readonly [number, number])[] = [[1, -1], [1, 1], [-1, 1], [-1, -1]];
+    const [cx, cz] = diag[rank - 4]!;
+    return { cx, cz };
+  }
+  return ringCells(2, rank - 7)[rank - 8]!;
 }
 
 export function layoutCity(projects: InputProject[], opts?: LayoutOpts): PlacedBlock[] {
