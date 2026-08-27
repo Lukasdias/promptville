@@ -16,3 +16,9 @@ body,
   height: 100%;
   margin: 0;
 }
+
+@layer components {
+  .paper-card {
+    @apply rounded-2xl border-[3px] border-ink/80 bg-cream shadow-[4px_4px_0_rgba(74,68,83,0.25)];
+  }
+}

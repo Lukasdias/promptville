@@ -1,6 +1,11 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { Scene } from "./components/three/Scene";
+import { Header } from "./components/hud/Header";
+import { StatsPanel } from "./components/hud/StatsPanel";
+import { DetailCard } from "./components/hud/DetailCard";
+import { HintBar } from "./components/hud/HintBar";
+import { MissingState } from "./components/hud/MissingState";
 
 export default function App() {
   return (
@@ -20,6 +25,11 @@ export default function App() {
           maxDistance={80}
         />
       </Canvas>
+      <Header />
+      <StatsPanel />
+      <DetailCard />
+      <HintBar />
+      <MissingState />
     </div>
   );
 }
