@@ -132,7 +132,7 @@ Queries: join `session` → `project` (via `project_id`), parse `model` JSON. `t
 
 Concrete R3F decisions from `docs/r3f-reference.md`:
 
-- `frameloop="demand"` + OrbitControls (drei auto-invalidates) so the static town is GPU-idle.
+- `frameloop="always"` (not `demand`) — the town has continuous animation: drifting clouds, hover scale, selection bob, staggered pop-in. A demand loop froze all of it.
 - Shared `BoxGeometry` + `useMemo` materials across houses; instancing for trees/lamps if draw calls exceed a few hundred.
 - `flat` (no ACES tonemapping) for the cartoon look; soft shadows; hemisphere + directional lights.
 - House selection via `onClick`/`onPointerOver`/`onPointerOut`; `e.stopPropagation()` so ground clicks clear selection.

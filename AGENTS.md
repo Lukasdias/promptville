@@ -28,7 +28,7 @@ Key files:
   - Hooks (`useThree`, `useFrame`, `useLoader`) only inside `<Canvas>`.
   - Never `setState` in `useFrame` - mutate refs directly, use `delta`.
   - Share geometries/materials via module-level constants (`House.tsx`).
-  - `frameloop="demand"` on Canvas - do not change to `always` without reason.
+  - `frameloop="always"` on Canvas (the town has continuous animation: drifting clouds, hover, bob). Do not switch to `demand` — clouds would freeze.
   - Ground planes must be rotated `rotation-x={-Math.PI/2}` (they default to +Z-facing).
 - Server reads the opencode DB **read-only** - never mutate it.
 - All UI copy in English, title "Promptville". Fonts Fredoka + Nunito only.

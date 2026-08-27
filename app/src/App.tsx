@@ -11,7 +11,7 @@ export default function App() {
   return (
     <div className="relative h-full w-full overflow-hidden">
       <Canvas
-        frameloop="demand"
+        frameloop="always"
         shadows
         camera={{ position: [0, 18, 26], fov: 50 }}
         className="h-full w-full"

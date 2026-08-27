@@ -138,9 +138,9 @@ useFrame(({ clock }) => {
 
 ## Applied to Opencode City
 
-- **`frameloop="demand"`** + drei OrbitControls (auto-invalidate) → GPU-idle when static; big win for a whole town.
+- **Continuous rendering**: `frameloop="always"` — the town has continuous animation (drifting clouds, hover scale, selection bob, staggered pop-in). A `demand` loop was tried but froze all of it (clouds only moved during interaction). Any perpetual animation requires a live frame loop.
 - **Shared/instanced geometry**: houses share `BoxGeometry`; trees/lights share instanced meshes or materials.
 - **Cartoon look**: `flat` (no ACES tonemapping), soft shadows, hemisphere + directional lights.
 - **Selection**: `onClick`/`onPointerOver`/`onPointerOut` per house; `e.stopPropagation()` so ground clicks clear selection; drei `Html` for the title banner + spring for the pop-in.
 - **Hover/animation in `useFrame`** with delta + refs, never `setState` in the loop.
-- **Performance**: keep draw calls low (<500), `useMemo` shared materials, `startTransition` when selecting heavy blocks.
+- **Performance**: keep draw calls low (<500 ideally), `useMemo` shared materials, `startTransition` when selecting heavy blocks.
