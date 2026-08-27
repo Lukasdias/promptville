@@ -8,7 +8,6 @@ const NOISE_SCALE = 0.035;
 const MAX_HEIGHT = 22;
 export const MOUNTAIN_INNER_GAP = 14;
 export const MOUNTAIN_BAND_WIDTH = 30;
-const SURFACE_LAYERS = 3;
 
 export function mountainOuterRadius(blocks: PlacedBlock[]): number {
   if (blocks.length === 0) return 0;
@@ -69,15 +68,15 @@ export function Mountains({ blocks }: { blocks: PlacedBlock[] }) {
         const ramp = Math.min(1, (d - innerR) / MOUNTAIN_BAND_WIDTH);
         const raw = (fbm(x, z) + 1) / 2;
         const h = Math.round(raw * MAX_HEIGHT * (0.35 + 0.65 * ramp));
-        if (h < SURFACE_LAYERS) continue;
+        if (h < 1) continue;
 
-        for (let layer = 0; layer < SURFACE_LAYERS; layer++) {
-          const y = h - layer;
-          if (y < 0) continue;
-          const snow = layer === 0 && h >= 9;
+        // Solid columns from the ground (y=0) up — no hollow crust, no floating base.
+        for (let y = 0; y <= h; y++) {
+          const snow = y >= h - 1 && h >= 9;
+          const rock = y >= h - 3;
           const color =
             snow ? SNOW_COLOR
-            : layer === 0 ? MOUNTAIN_COLOR
+            : rock ? MOUNTAIN_COLOR
             : "#6f7368";
           voxels.push({ x, y, z, color });
         }
@@ -88,5 +87,10 @@ export function Mountains({ blocks }: { blocks: PlacedBlock[] }) {
   }, [blocks]);
 
   if (voxels.length === 0) return null;
-  return <InstancedVoxels voxels={voxels} />;
+  // Sink slightly into the ground so the base sits flush with the grass plane.
+  return (
+    <group position={[0, -0.1, 0]}>
+      <InstancedVoxels voxels={voxels} />
+    </group>
+  );
 }
