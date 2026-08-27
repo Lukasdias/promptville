@@ -99,14 +99,15 @@ Queries: join `session` → `project` (via `project_id`), parse `model` JSON. `t
 
 ## 3D Scene
 
-- **Ground**: flat low-poly plane, grass green, with a street grid. Roads = dark cream slabs with dashed lane markings between blocks.
+- **Ground**: flat low-poly grass plane (all planes rotated `-90°` on X — never left facing +Z). **Streets**: a connected street graph (`buildStreets`) fills the gaps between blocks — horizontal avenues span the full city width between rows, vertical streets join them, forming one Manhattan-style network (grid pattern, per classic town/road generation: growth from seed blocks, enclosed quarters).
 - **Blocks**: one per project, arranged left-to-right by session count (biggest projects first). Block layout: `session grid W×N` with padding; block footprint sized to its session count.
 - **Houses** (procedural):
   - **Body color**: project identity — hue derived from project index spread across a candy palette.
   - **Roof color**: model when known — deepseek-v4-flash / minimax-m3 / kimi-k2.7-code / gpt-5.6-luna each get an accent; unknown/legacy → warm neutral gray. (432/462 sessions have empty model — mostly neutral roofs, keeps the town cohesive.)
   - **Height**: `log-scaled(tokensIn + tokensOut)`, clamped; 0-token sessions → tiny cottage.
   - **Roof**: cone/pyramid; chimney on some; tiny door + window inset on the facade.
-- **World dressing**: soft gradient sky, drei `Float` clouds (billboards), low-poly trees, street lamps, a few small cars, one park in the center.
+- **World boundaries**: a ring of low-poly mountains (cone peaks + snow caps, flat shading) surrounds the city, sized from the layout bounds; fog blends them into the sky.
+- **World dressing**: soft gradient sky, drei `Float` clouds, low-poly trees, street lamps, and one park placed in a free corner (never overlapping a block).
 - **Lighting**: flat, cartoonish — hemisphere + directional with low shadow, no bloom.
 
 ## Cartoonish Visual Identity ("Storybook Toytown")
