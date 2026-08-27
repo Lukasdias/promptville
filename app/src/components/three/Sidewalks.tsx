@@ -1,40 +1,17 @@
 import { useMemo } from "react";
-import { CanvasTexture, MeshStandardMaterial, RepeatWrapping } from "three";
+import { MeshStandardMaterial } from "three";
 import type { Street } from "../../layout";
 import type { Intersection } from "../../traffic";
-import { COLORS } from "../../theme";
+import { sidewalkMaterialFor } from "../../textures";
+import { CROSSWALK_BRICK, CROSSWALK_SHADOW } from "../../theme";
 
 const SIDEWALK_WIDTH = 0.7;
+const CROSS_SPACING = 0.5;
+const CROSS_WIDTH = 0.4;
+const SHADOW_OFFSET = 0.08;
 
-// Tileable canvas-generated brick texture (no image assets).
-function makeBrickTexture(): CanvasTexture {
-  const canvas = document.createElement("canvas");
-  const w = 96;
-  const h = 48;
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = COLORS.mortar;
-  ctx.fillRect(0, 0, w, h);
-  const rows = 2;
-  const cols = 3;
-  const brickH = h / rows;
-  const brickW = w / cols;
-  const mortar = 3;
-  ctx.fillStyle = COLORS.brick;
-  for (let r = 0; r < rows; r++) {
-    const y = r * brickH;
-    const off = r % 2 === 0 ? 0 : brickW / 2;
-    for (let c = 0; c < cols; c++) {
-      const x = c * brickW + off;
-      ctx.fillRect(x, y + mortar / 2, brickW - mortar, brickH - mortar);
-    }
-  }
-  const tex = new CanvasTexture(canvas);
-  tex.wrapS = RepeatWrapping;
-  tex.wrapT = RepeatWrapping;
-  return tex;
-}
+const CROSSWALK_MATERIAL = new MeshStandardMaterial({ color: CROSSWALK_BRICK, roughness: 1 });
+const CROSSWALK_SHADOW_MATERIAL = new MeshStandardMaterial({ color: CROSSWALK_SHADOW, roughness: 1 });
 
 interface SidewalkRect {
   x: number;
@@ -65,26 +42,32 @@ export function Sidewalks({
   }, [streets]);
 
   const sidewalkMaterials = useMemo(
-    () =>
-      sidewalks.map((sw) => {
-        const tex = makeBrickTexture();
-        tex.repeat.set(Math.max(1, sw.w / 1.6), Math.max(1, sw.d / 0.8));
-        tex.needsUpdate = true;
-        return new MeshStandardMaterial({ map: tex, roughness: 1 });
-      }),
+    () => sidewalks.map((sw) => sidewalkMaterialFor(sw.w, sw.d)),
     [sidewalks],
   );
 
+  // Crosswalks cross both the avenue and the side street at each intersection;
+  // each crossing has a shadow band offset behind its stripes ("paper shadow").
   const crosswalks = useMemo(() => {
-    const out: SidewalkRect[] = [];
+    const stripes: SidewalkRect[] = [];
+    const bands: SidewalkRect[] = [];
     for (const it of intersections) {
       const avenue = streets.find((s) => s.width >= s.depth && Math.abs(s.z - it.z) < 0.01);
-      if (!avenue) continue;
-      for (let i = -1; i <= 2; i++) {
-        out.push({ x: it.x + i * 0.5 - 0.15, z: it.z, w: 0.4, d: avenue.depth });
+      if (avenue) {
+        bands.push({ x: it.x - 0.85, z: it.z - avenue.depth / 2 - 0.15, w: 1.9, d: avenue.depth + 0.3 });
+        for (let i = -1; i <= 2; i++) {
+          stripes.push({ x: it.x + i * CROSS_SPACING - 0.15, z: it.z, w: CROSS_WIDTH, d: avenue.depth });
+        }
+      }
+      const side = streets.find((s) => s.width < s.depth && Math.abs(s.x - it.x) < 0.01);
+      if (side) {
+        bands.push({ x: it.x - side.width / 2 - 0.15, z: it.z - 0.85, w: side.width + 0.3, d: 1.9 });
+        for (let i = -1; i <= 2; i++) {
+          stripes.push({ x: it.x, z: it.z + i * CROSS_SPACING - 0.15, w: side.width, d: CROSS_WIDTH });
+        }
       }
     }
-    return out;
+    return { stripes, bands };
   }, [intersections, streets]);
 
   return (
@@ -94,10 +77,24 @@ export function Sidewalks({
           <planeGeometry args={[sw.w, sw.d]} />
         </mesh>
       ))}
-      {crosswalks.map((c, i) => (
-        <mesh key={i} position={[c.x, -0.041, c.z]} rotation-x={-Math.PI / 2}>
+      {crosswalks.bands.map((c, i) => (
+        <mesh
+          key={`sb${i}`}
+          position={[c.x + SHADOW_OFFSET, -0.042, c.z + SHADOW_OFFSET]}
+          rotation-x={-Math.PI / 2}
+          material={CROSSWALK_SHADOW_MATERIAL}
+        >
           <planeGeometry args={[c.w, c.d]} />
-          <meshStandardMaterial color={COLORS.crosswalk} />
+        </mesh>
+      ))}
+      {crosswalks.stripes.map((c, i) => (
+        <mesh
+          key={`cs${i}`}
+          position={[c.x, -0.041, c.z]}
+          rotation-x={-Math.PI / 2}
+          material={CROSSWALK_MATERIAL}
+        >
+          <planeGeometry args={[c.w, c.d]} />
         </mesh>
       ))}
     </group>
