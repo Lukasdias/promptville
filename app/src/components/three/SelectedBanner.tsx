@@ -3,18 +3,7 @@ import { Float, Html } from "@react-three/drei";
 import { animated, useSpring } from "@react-spring/web";
 import { useApp } from "../../store";
 import { useNeighborhood } from "../../query";
-import {
-  buildPerimeterRing,
-  buildStreets,
-  cityBounds,
-  CIVIC_PLAZA,
-  extendRoadsToRing,
-  layoutCity,
-} from "../../layout";
-import type { PlacedBlock } from "../../layout";
-import { findIntersections } from "../../traffic";
-import { buildRoadGraph } from "../../roadgraph";
-import { layoutCivicDistrict } from "../../civic";
+import { useCity } from "../../city";
 import { BUILDING_META } from "../../civic";
 
 function TitleChip({ title }: { title: string }) {
@@ -53,25 +42,7 @@ export function SelectedBanner() {
   const selected = useApp((s) => s.selected);
   const selectedBuilding = useApp((s) => s.selectedBuilding);
   const { data } = useNeighborhood();
-
-  const blocks = useMemo<PlacedBlock[]>(
-    () => (data ? layoutCity(data.projects, { plaza: CIVIC_PLAZA }) : []),
-    [data],
-  );
-
-  const plazaBlock = useMemo(() => blocks.find((b) => b.kind === "plaza") ?? null, [blocks]);
-  const mainStreets = useMemo(() => buildStreets(blocks), [blocks]);
-  const bounds = useMemo(() => cityBounds(blocks), [blocks]);
-  const ring = useMemo(() => (bounds ? buildPerimeterRing(bounds) : []), [bounds]);
-  const graphStreets = useMemo(
-    () => (bounds ? [...extendRoadsToRing(mainStreets, bounds), ...ring] : []),
-    [mainStreets, bounds, ring],
-  );
-  const graph = useMemo(() => buildRoadGraph(graphStreets, findIntersections(graphStreets)), [graphStreets]);
-  const civic = useMemo(
-    () => (plazaBlock && graph.nodes.length > 0 ? layoutCivicDistrict(plazaBlock, graphStreets, graph) : null),
-    [plazaBlock, graphStreets, graph],
-  );
+  const { blocks, civic } = useCity();
 
   const position = useMemo(() => {
     if (selectedBuilding) {

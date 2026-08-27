@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { PlacedBlock, Street } from "../../layout";
+import { cityBounds, type PlacedBlock, type Street } from "../../layout";
 import { environment } from "../../config";
 import { useApp } from "../../store";
 import { findIntersections } from "../../traffic";
@@ -16,7 +16,8 @@ import {
   type Voxel,
 } from "../../voxel";
 import { InstancedVoxels } from "./InstancedVoxels";
-import { isClearSpot, mulberry32, pickParkSpot } from "../../placement";
+import { isClearSpot, pickParkSpot } from "../../placement";
+import { mulberry32 } from "../../rand";
 
 const BUSH_SIZE = 0.22;
 const FLOWER_SIZE = 0.18;
@@ -26,14 +27,6 @@ const BENCH_SIZE = 0.2;
 const FOUNTAIN_SIZE = 0.2;
 const HYDRANT_SIZE = 0.16;
 const CONE_SIZE = 0.16;
-
-function cityBounds(blocks: PlacedBlock[]) {
-  const minX = Math.min(...blocks.map((b) => b.x - b.width / 2));
-  const maxX = Math.max(...blocks.map((b) => b.x + b.width / 2));
-  const minZ = Math.min(...blocks.map((b) => b.z - b.depth / 2));
-  const maxZ = Math.max(...blocks.map((b) => b.z + b.depth / 2));
-  return { minX, maxX, minZ, maxZ };
-}
 
 interface DetailSets {
   bushes: Voxel[];
@@ -49,11 +42,11 @@ interface DetailSets {
 export function Details({ blocks, streets }: { blocks: PlacedBlock[]; streets: Street[] }) {
   const showScenery = useApp((s) => s.tweaks.showScenery);
   const sets = useMemo<DetailSets>(() => {
-    if (blocks.length === 0) {
-      return { bushes: [], flowers: [], mailboxes: [], signs: [], benches: [], fountain: [], hydrants: [], cones: [] };
-    }
+    const empty: DetailSets = { bushes: [], flowers: [], mailboxes: [], signs: [], benches: [], fountain: [], hydrants: [], cones: [] };
+    const bounds = cityBounds(blocks);
+    if (!bounds) return empty;
     const rand = mulberry32(2024);
-    const { minX, maxX, minZ, maxZ } = cityBounds(blocks);
+    const { minX, maxX, minZ, maxZ } = bounds;
     const cx = (minX + maxX) / 2;
     const cz = (minZ + maxZ) / 2;
     const spread = Math.max(maxX - minX, maxZ - minZ) / 2 + 8;

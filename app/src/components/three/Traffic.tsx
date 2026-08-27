@@ -11,6 +11,7 @@ import { carVoxels, personVoxels, type Voxel } from "../../voxel";
 import type { VisitorPath } from "../../civic";
 import type { BuildingKind } from "../../types";
 import { bumpBuildingActivity } from "../../activity";
+import { mulberry32 } from "../../rand";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { TrafficLights } from "./TrafficLights";
 
@@ -39,16 +40,6 @@ const RESPAWN_MIN = 1.2;
 const RESPAWN_MAX = 3.0;
 
 type MoverState = "drive" | "fadeOut" | "idle" | "fadeIn";
-
-function mulberry32(seed: number) {
-  return () => {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 function smooth(t: number): number {
   const c = Math.max(0, Math.min(1, t));
@@ -518,8 +509,6 @@ export function Traffic({
   visitorBuildings?: BuildingKind[];
 }) {
   const specs = useTrafficSpecs(streets);
-  const showTraffic = useApp((s) => s.tweaks.showTraffic);
-  if (!showTraffic) return null;
   const cars = useCarSpecs();
   const visitorSpecs = useMemo(() => {
     if (visitorPaths.length === 0) return [];
@@ -532,6 +521,9 @@ export function Traffic({
       speed: 0.8 + rand() * 0.5,
     }));
   }, [visitorPaths, visitorBuildings]);
+
+  const showTraffic = useApp((s) => s.tweaks.showTraffic);
+  if (!showTraffic) return null;
 
   return (
     <group>

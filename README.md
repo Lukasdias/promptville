@@ -14,7 +14,7 @@ The scene is built with React Three Fiber and reads the opencode sqlite database
 - Procedural low-poly town: connected street graph, grass lots, park, trees, lamps, and a mountain ring boundary
 - Interactive houses: hover to highlight, click for a detail card (title, model, agent, cost, tokens, date) with a floating title banner
 - Paper-style HUD: Fredoka + Nunito, pastel palette
-- `frameloop="demand"` rendering (GPU-idle when the scene is static) with shared geometries
+- `frameloop="always"` (the town animates continuously — drifting clouds, hover bobbing, traffic) with shared geometries and instanced voxels
 
 ## Requirements
 

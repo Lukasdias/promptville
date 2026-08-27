@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { MathUtils } from "three";
-import { layoutCity } from "../../layout";
 import { useNeighborhood } from "../../query";
+import { useCity } from "../../city";
 import { useApp } from "../../store";
 import {
   DEFAULT_CAMERA,
   DEFAULT_DISTANCE,
-  DEFAULT_EXTENT,
   DEFAULT_YAW,
   DRAG_THRESHOLD,
   EDGE_MARGIN,
@@ -19,7 +18,6 @@ import {
   zoomBy,
   type CameraState,
 } from "../../camera";
-import { mountainOuterRadius } from "./Mountains";
 import { isPanActive, setPanActive } from "../../pan";
 
 const LAMBDA_PAN = 6;
@@ -45,12 +43,8 @@ export function CivCamera() {
   const clearSelection = useApp((s) => s.clearSelection);
 
   const { data } = useNeighborhood();
-  const blocks = useMemo(() => (data ? layoutCity(data.projects) : []), [data]);
   const projects = data?.projects ?? [];
-  const extent = useMemo(
-    () => Math.max(DEFAULT_EXTENT, blocks.length ? mountainOuterRadius(blocks) + 6 : DEFAULT_EXTENT),
-    [blocks],
-  );
+  const { blocks, extent } = useCity();
 
   const state = useRef<CameraState>({ ...DEFAULT_CAMERA });
   const goal = useRef<CameraState>({ ...DEFAULT_CAMERA });

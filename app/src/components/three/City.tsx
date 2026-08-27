@@ -1,14 +1,8 @@
-import { useMemo } from "react";
-import { useNeighborhood } from "../../query";
-import { CIVIC_PLAZA, layoutCity } from "../../layout";
+import { useCity } from "../../city";
 import { Block } from "./Block";
 
 export function City() {
-  const { data } = useNeighborhood();
-  const blocks = useMemo(
-    () => (data ? layoutCity(data.projects, { plaza: CIVIC_PLAZA }) : []),
-    [data],
-  );
+  const { blocks } = useCity();
   if (blocks.length === 0) return null;
   return (
     <group>

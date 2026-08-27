@@ -1,6 +1,5 @@
 import { useMemo } from "react";
-import { useNeighborhood } from "../../query";
-import { CIVIC_PLAZA, layoutCity } from "../../layout";
+import { useCity } from "../../city";
 import { PROJECT_PALETTE } from "../../theme";
 import { useApp } from "../../store";
 import { personVoxels, placeVoxels, type Voxel } from "../../voxel";
@@ -9,8 +8,7 @@ import { InstancedVoxels } from "./InstancedVoxels";
 const PERSON_SIZE = 0.15;
 
 export function People() {
-  const { data } = useNeighborhood();
-  const blocks = useMemo(() => (data ? layoutCity(data.projects, { plaza: CIVIC_PLAZA }) : []), [data]);
+  const { blocks } = useCity();
   const showPeople = useApp((s) => s.tweaks.showPeople);
 
   const voxels = useMemo(() => {

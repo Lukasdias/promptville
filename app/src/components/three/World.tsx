@@ -6,7 +6,8 @@ import { InstancedVoxels } from "./InstancedVoxels";
 import { COLORS } from "../../theme";
 import { useApp } from "../../store";
 import { environment } from "../../config";
-import { isClearSpot, mulberry32 } from "../../placement";
+import { isClearSpot } from "../../placement";
+import { mulberry32 } from "../../rand";
 
 const TREE_SIZE = 0.22;
 const LAMP_SIZE = 0.25;

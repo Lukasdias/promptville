@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { createNoise3D } from "simplex-noise";
 import { ROAD_WIDTH, type PlacedBlock, type Street } from "../../layout";
 import { useApp } from "../../store";
+import { mulberry32 } from "../../rand";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { MOUNTAIN_COLOR, SNOW_COLOR } from "../../voxel";
 
@@ -57,16 +58,6 @@ export function mountainOuterRadius(blocks: PlacedBlock[], streets?: Street[]): 
   return mountainRing(blocks, streets)?.outerR ?? 0;
 }
 
-function mulberry32(seed: number) {
-  return () => {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 export function Mountains({ blocks, streets }: { blocks: PlacedBlock[]; streets: Street[] }) {
   const showMountains = useApp((s) => s.tweaks.showMountains);
   const voxels = useMemo(() => {
@@ -116,7 +107,7 @@ export function Mountains({ blocks, streets }: { blocks: PlacedBlock[]; streets:
     }
 
     return voxels;
-  }, [blocks]);
+  }, [blocks, streets]);
 
   if (voxels.length === 0 || !showMountains) return null;
   // Sink slightly into the ground so the base sits flush with the grass plane.
