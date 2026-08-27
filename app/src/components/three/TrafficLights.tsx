@@ -1,20 +1,24 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { AdditiveBlending, Color, type Mesh, type MeshStandardMaterial, type PointLight } from "three";
+import { AdditiveBlending, Color, type Mesh, type PointLight } from "three";
 import type { Street } from "../../layout";
 import type { Intersection, TrafficController } from "../../traffic";
 import { trafficLightVoxels, TRAFFIC_GREEN, TRAFFIC_YELLOW, TRAFFIC_RED } from "../../voxel";
 import { InstancedVoxels } from "./InstancedVoxels";
 
 const LIGHT_SIZE = 0.22;
-// Lens voxel y-centers in the blueprint map to these world heights.
-const LAMP_Y = { green: 3.5 * LIGHT_SIZE, yellow: 4.5 * LIGHT_SIZE, red: 5.5 * LIGHT_SIZE };
+// World heights of the lens voxel centers in the blueprint (y 6/8/10 → 2-tall lamps).
+const LAMP_Y = {
+  green: (6.5 + 7.5) * 0.5 * LIGHT_SIZE,
+  yellow: (8.5 + 9.5) * 0.5 * LIGHT_SIZE,
+  red: (10.5 + 11.5) * 0.5 * LIGHT_SIZE,
+};
 // Half the sidewalk width: the light stands on the sidewalk at the corner.
 const SIDEWALK_CENTER = 0.35;
 const ROAD_HALF = 1.75;
 
 // Radial additive glow, billboarded toward the camera. This is the "shader" part
-// of the signal — a soft light bloom instead of a flat box.
+// of the signal — a soft light bloom on the active lens.
 function GlowPlane({
   y,
   color,
@@ -34,7 +38,7 @@ function GlowPlane({
   });
 
   return (
-    <mesh ref={mesh} position={[0, y, 0]} scale={[0.95, 0.95, 0.95]}>
+    <mesh ref={mesh} position={[0, y, 0]} scale={[0.8, 0.8, 0.8]}>
       <planeGeometry args={[1, 1]} />
       <shaderMaterial
         uniforms={{ uColor: { value: new Color(color) } }}
@@ -55,7 +59,7 @@ function GlowPlane({
             float d = length(vUv - 0.5) * 2.0;
             float a = smoothstep(1.0, 0.0, d);
             a *= a;
-            gl_FragColor = vec4(uColor, a * 0.85);
+            gl_FragColor = vec4(uColor, a * 0.9);
           }
         `}
       />
@@ -72,9 +76,6 @@ function TrafficLight({
   intersection: Intersection;
   streets: Street[];
 }) {
-  const greenMat = useRef<MeshStandardMaterial>(null);
-  const yellowMat = useRef<MeshStandardMaterial>(null);
-  const redMat = useRef<MeshStandardMaterial>(null);
   const lightRef = useRef<PointLight>(null);
 
   const greenActive = useRef(false);
@@ -97,23 +98,10 @@ function TrafficLight({
     yellowActive.current = yellow;
     redActive.current = red;
 
-    if (greenMat.current) {
-      greenMat.current.color.set(green ? TRAFFIC_GREEN : "#1b2b1f");
-      greenMat.current.emissive.set(green ? TRAFFIC_GREEN : "#000000");
-    }
-    if (yellowMat.current) {
-      yellowMat.current.color.set(yellow ? TRAFFIC_YELLOW : "#2b2413");
-      yellowMat.current.emissive.set(yellow ? TRAFFIC_YELLOW : "#000000");
-    }
-    if (redMat.current) {
-      redMat.current.color.set(red ? TRAFFIC_RED : "#2b1515");
-      redMat.current.emissive.set(red ? TRAFFIC_RED : "#000000");
-    }
-
     if (lightRef.current) {
       const glow = green ? TRAFFIC_GREEN : yellow ? TRAFFIC_YELLOW : TRAFFIC_RED;
       lightRef.current.color.set(glow);
-      lightRef.current.intensity = green ? 1.2 : 0.35;
+      lightRef.current.intensity = green ? 1.4 : 0.4;
       lightRef.current.position.y = green ? LAMP_Y.green : yellow ? LAMP_Y.yellow : LAMP_Y.red;
     }
   });
@@ -121,18 +109,6 @@ function TrafficLight({
   return (
     <group position={[intersection.x + offsetX, 0, intersection.z + offsetZ]}>
       <InstancedVoxels voxels={trafficLightVoxels()} voxelSize={LIGHT_SIZE} />
-      <mesh position={[0, LAMP_Y.green, 0]}>
-        <boxGeometry args={[0.18, 0.18, 0.18]} />
-        <meshStandardMaterial ref={greenMat} emissiveIntensity={1} />
-      </mesh>
-      <mesh position={[0, LAMP_Y.yellow, 0]}>
-        <boxGeometry args={[0.18, 0.18, 0.18]} />
-        <meshStandardMaterial ref={yellowMat} emissiveIntensity={1} />
-      </mesh>
-      <mesh position={[0, LAMP_Y.red, 0]}>
-        <boxGeometry args={[0.18, 0.18, 0.18]} />
-        <meshStandardMaterial ref={redMat} emissiveIntensity={1} />
-      </mesh>
       <GlowPlane y={LAMP_Y.green} color={TRAFFIC_GREEN} activeRef={greenActive} />
       <GlowPlane y={LAMP_Y.yellow} color={TRAFFIC_YELLOW} activeRef={yellowActive} />
       <GlowPlane y={LAMP_Y.red} color={TRAFFIC_RED} activeRef={redActive} />

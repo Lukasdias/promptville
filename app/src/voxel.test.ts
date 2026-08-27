@@ -198,13 +198,16 @@ describe("environmental blueprints", () => {
     expect(voxels.every((v) => v.color === CONE_COLOR)).toBe(true);
   });
 
-  test("traffic light is a thin pole with a neutral housing (lamp box rendered on top)", () => {
+  test("traffic light is a detailed pole with pedestal, frame and hooded R/Y/G lenses", () => {
     const voxels = trafficLightVoxels();
-    expect(voxels).toHaveLength(13);
-    // No baked lens colors — the live lamp is the single signal.
-    expect(voxels.some((v) => v.color === "#ff5252")).toBe(false);
-    expect(voxels.some((v) => v.color === "#ffd24a")).toBe(false);
-    expect(voxels.some((v) => v.color === "#3ddc64")).toBe(false);
-    expect(voxels.every((v) => v.z === 0)).toBe(true);
+    expect(voxels).toHaveLength(82);
+    // One lens per color, on the front face, with a visor hood above each
+    expect(voxels.some((v) => v.color === "#3ddc64" && v.y === 6 && v.z === -1)).toBe(true);
+    expect(voxels.some((v) => v.color === "#ffd24a" && v.y === 8 && v.z === -1)).toBe(true);
+    expect(voxels.some((v) => v.color === "#ff5252" && v.y === 10 && v.z === -1)).toBe(true);
+    expect(voxels.some((v) => v.z === -1 && v.y === 8 && v.color !== "#ffd24a")).toBe(true); // green visor
+    // pedestal + cap
+    expect(voxels.some((v) => v.y === 0)).toBe(true);
+    expect(voxels.some((v) => v.y === 12 && v.z === 0)).toBe(true);
   });
 });
