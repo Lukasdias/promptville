@@ -23,9 +23,11 @@ function useCrosserSpecs(
   return useMemo(() => {
     const out: CrosserSpec[] = [];
     const shirts = ["#ffb3ba", "#bae1ff", "#baffc9", "#d4baff"];
-    for (const it of intersections.slice(0, 4)) {
+    // Only cross at intersections that sit on a main avenue (not ring corners).
+    for (const it of intersections.slice(0, 12)) {
       const avenue = streets.find((s) => s.width >= s.depth && Math.abs(s.z - it.z) < 0.01);
       if (!avenue) continue;
+      if (out.length >= 4) break;
       out.push({
         intersection: it,
         halfDepth: avenue.depth / 2,

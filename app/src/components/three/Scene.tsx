@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { useNeighborhood } from "../../query";
-import { buildStreets, layoutCity } from "../../layout";
+import { buildPerimeterRing, buildStreets, cityBounds, extendRoadsToRing, layoutCity } from "../../layout";
 import { traffic } from "../../config";
 import { TrafficController, findIntersections } from "../../traffic";
+import { buildRoadGraph } from "../../roadgraph";
 import { Ground } from "./Ground";
 import { City } from "./City";
 import { World } from "./World";
@@ -20,12 +21,29 @@ export function Scene() {
     () => (data ? layoutCity(data.projects) : []),
     [data],
   );
-  const streets = useMemo(() => buildStreets(blocks), [blocks]);
+
+  // Visible roads = main grid + ring. The ring connects every dead end.
+  const mainStreets = useMemo(() => buildStreets(blocks), [blocks]);
+  const bounds = useMemo(() => cityBounds(blocks), [blocks]);
+  const ring = useMemo(() => (bounds ? buildPerimeterRing(bounds) : []), [bounds]);
+  const renderStreets = useMemo(() => (bounds ? [...mainStreets, ...ring] : []), [mainStreets, ring, bounds]);
+
+  // Routing roads = streets extended to the ring so the graph has no dead ends.
+  const graphStreets = useMemo(
+    () => (bounds ? [...extendRoadsToRing(mainStreets, bounds), ...ring] : []),
+    [mainStreets, bounds, ring],
+  );
+
   const extent = useMemo(() => mountainOuterRadius(blocks) + 6, [blocks]);
-  const intersections = useMemo(() => findIntersections(streets), [streets]);
+  const intersections = useMemo(() => findIntersections(graphStreets), [graphStreets]);
+  const crosswalkIntersections = useMemo(() => findIntersections(mainStreets), [mainStreets]);
   const controller = useMemo(
     () => new TrafficController(intersections, traffic.cycle),
     [intersections],
+  );
+  const graph = useMemo(
+    () => buildRoadGraph(graphStreets, intersections),
+    [graphStreets, intersections],
   );
 
   return (
@@ -44,14 +62,14 @@ export function Scene() {
         shadow-camera-top={45}
         shadow-camera-bottom={-45}
       />
-      <Ground blocks={blocks} streets={streets} extent={extent} />
-      <Sidewalks streets={streets} intersections={intersections} />
+      <Ground blocks={blocks} streets={renderStreets} extent={extent} />
+      <Sidewalks streets={renderStreets} intersections={crosswalkIntersections} />
       <City />
-      <World blocks={blocks} streets={streets} />
-      <Details blocks={blocks} streets={streets} />
+      <World blocks={blocks} streets={renderStreets} />
+      <Details blocks={blocks} streets={renderStreets} />
       <People />
-      <Traffic streets={streets} intersections={intersections} controller={controller} />
-      <Crossers streets={streets} intersections={intersections} controller={controller} />
+      <Traffic streets={renderStreets} intersections={intersections} controller={controller} graph={graph} />
+      <Crossers streets={mainStreets} intersections={intersections} controller={controller} />
       <Mountains blocks={blocks} />
       <SelectedBanner />
     </>

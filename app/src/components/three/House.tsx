@@ -6,6 +6,7 @@ import { MODEL_ROOF, PROJECT_PALETTE, UNKNOWN_ROOF } from "../../theme";
 import { houseVoxels } from "../../voxel";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { useApp } from "../../store";
+import { isPanActive } from "../../pan";
 import type { SessionData } from "../../types";
 
 type HouseKind = "cottage" | "house" | "mansion" | "skyscraper";
@@ -99,6 +100,7 @@ export function House({
       position={[x, 0, z]}
       scale={0.001}
       onClick={(e) => {
+        if (isPanActive()) return;
         e.stopPropagation();
         select(session);
       }}

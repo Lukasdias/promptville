@@ -1,10 +1,11 @@
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
 import { Scene } from "./components/three/Scene";
+import { CivCamera } from "./components/three/CivCamera";
 import { Header } from "./components/hud/Header";
 import { StatsPanel } from "./components/hud/StatsPanel";
 import { DetailCard } from "./components/hud/DetailCard";
 import { HintBar } from "./components/hud/HintBar";
+import { HelpPanel } from "./components/hud/HelpPanel";
 import { LoadingState } from "./components/hud/LoadingState";
 import { MissingState } from "./components/hud/MissingState";
 
@@ -18,18 +19,13 @@ export default function App() {
         className="h-full w-full"
       >
         <Scene />
-        <OrbitControls
-          enablePan
-          minPolarAngle={Math.PI / 6}
-          maxPolarAngle={Math.PI / 2.4}
-          minDistance={6}
-          maxDistance={80}
-        />
+        <CivCamera />
       </Canvas>
       <Header />
       <StatsPanel />
       <DetailCard />
       <HintBar />
+      <HelpPanel />
       <LoadingState />
       <MissingState />
     </div>

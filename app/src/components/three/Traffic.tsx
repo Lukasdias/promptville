@@ -4,6 +4,7 @@ import type { Group } from "three";
 import type { Street } from "../../layout";
 import { traffic } from "../../config";
 import type { Intersection, TrafficController } from "../../traffic";
+import type { RoadGraph } from "../../roadgraph";
 import { carVoxels, personVoxels, type Voxel } from "../../voxel";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { TrafficLights } from "./TrafficLights";
@@ -21,8 +22,7 @@ const CAR_BRAKE = 7;
 const STOP_CLEAR = 0.18;
 const END_MARGIN = 0.4;
 
-// Spawn/despawn lifecycle — no wrapping teleports. A mover drives to the end of its
-// street, fades out, waits a random moment, then fades back in at the other end.
+// Spawn/despawn lifecycle for foot traffic — no wrapping teleports.
 const FADE_OUT = 0.25;
 const FADE_IN = 0.35;
 const RESPAWN_MIN = 1.2;
@@ -117,16 +117,14 @@ interface Puff {
   oz: number;
 }
 
-// Random smoke puffs that trail behind a moving car (world space).
+// Random smoke puffs that trail behind a moving car, oriented along its heading.
 function VehicleSmoke({
   carRef,
-  dir,
-  axis,
+  headingRef,
   enabledRef,
 }: {
   carRef: { current: Group | null };
-  dir: 1 | -1;
-  axis: "x" | "z";
+  headingRef: { current: { x: number; z: number } };
   enabledRef: { current: boolean };
 }) {
   const puffs = useRef<Puff[]>(
@@ -146,8 +144,8 @@ function VehicleSmoke({
         idle.active = true;
         idle.age = 0;
         idle.life = 0.5 + Math.random() * 0.5;
-        idle.ox = axis === "x" ? -dir * 0.5 : 0;
-        idle.oz = axis === "z" ? -dir * 0.5 : 0;
+        idle.ox = -headingRef.current.x * 0.5;
+        idle.oz = -headingRef.current.z * 0.5;
         emitIn.current = 0.5 + Math.random() * 1.0;
       }
     }
@@ -166,12 +164,13 @@ function VehicleSmoke({
         g.visible = false;
         continue;
       }
+      const h = headingRef.current;
       const t = p.age / p.life;
-      const back = axis === "x" ? -dir : 0;
-      const sideways = axis === "z" ? -dir : 0;
+      const perpX = -h.z;
+      const perpZ = h.x;
       const wobble = Math.sin(p.age * 3) * 0.15;
-      const x = car.position.x + p.ox + back * t * 0.7 + (axis === "z" ? wobble : 0);
-      const z = car.position.z + p.oz + sideways * t * 0.7 + (axis === "x" ? wobble : 0);
+      const x = car.position.x + p.ox - h.x * t * 0.7 + perpX * wobble;
+      const z = car.position.z + p.oz - h.z * t * 0.7 + perpZ * wobble;
       const y = car.position.y + 0.3 + t * 0.9;
       g.position.set(x, y, z);
       g.scale.setScalar(0.15 + t * 0.6);
@@ -196,7 +195,7 @@ function VehicleSmoke({
   );
 }
 
-// Shared fade lifecycle. Mutates the mover group's scale; returns nothing (uses refs).
+// Shared fade lifecycle for foot traffic. Returns the scale to apply.
 function stepLifecycle(
   state: { current: MoverState },
   stateT: { current: number },
@@ -230,75 +229,85 @@ function stepLifecycle(
   return { scale, driving };
 }
 
-function CarMover({
+// Cars drive the road graph forever: follow a directed edge, brake at red lights,
+// and pick the next edge at each node (straight-through preferred, no U-turns).
+function WaypointCar({
   spec,
+  graph,
   controller,
-  lights,
 }: {
   spec: TrafficSpec;
+  graph: RoadGraph;
   controller: TrafficController;
-  lights: { x: number; id: number }[];
 }) {
   const ref = useRef<Group>(null);
-  const pos = useRef((Math.random() - 0.5) * (spec.street.width - 2));
-  const speed = useRef(0);
-  const state = useRef<MoverState>("drive");
-  const stateT = useRef(0);
-  const respawnIn = useRef(0);
+  const heading = useRef({ x: 1, z: 0 });
   const smokeOn = useRef(true);
 
-  const horizontal = spec.street.width >= spec.street.depth;
-  const length = horizontal ? spec.street.width : spec.street.depth;
-  const startPos = spec.dir === 1 ? -length / 2 : length / 2;
-  const endPos = spec.dir === 1 ? length / 2 : -length / 2;
+  const { edgeIdx, t, speed } = useMemo(() => {
+    const startEdge = Math.floor(Math.random() * Math.max(1, graph.edges.length));
+    return { edgeIdx: { current: startEdge }, t: { current: Math.random() }, speed: { current: 0 } };
+  }, [graph]);
 
   const voxels = useMemo(() => carVoxels(spec.color), [spec.color]);
 
   useFrame((_, delta) => {
     const g = ref.current;
     if (!g) return;
-    const { scale, driving } = stepLifecycle(state, stateT, respawnIn, delta);
+    const edge = graph.edges[edgeIdx.current];
+    const a = graph.nodes[edge.from];
+    const b = graph.nodes[edge.to];
 
-    if (state.current === "fadeIn") {
-      pos.current = startPos;
-      speed.current = 0;
-    } else if (driving) {
-      const dir = spec.dir;
-      const next = lights.find((l) => (l.x - pos.current) * dir > 0.05);
-      let v = speed.current;
-      if (next && !controller.greenFor(next.id, "x")) {
-        const dist = (next.x - pos.current) * dir;
-        if (dist > STOP_CLEAR) {
-          v = Math.max(0, Math.min(v, Math.sqrt(2 * CAR_BRAKE * (dist - STOP_CLEAR))));
-        } else {
-          v = 0;
-        }
+    let v = speed.current;
+    const remaining = (1 - t.current) * edge.length;
+    const target = graph.nodes[edge.to];
+
+    if (target.intersectionId !== null && !controller.greenFor(target.intersectionId, edge.axis)) {
+      if (remaining > STOP_CLEAR) {
+        v = Math.max(0, Math.min(v, Math.sqrt(2 * CAR_BRAKE * (remaining - STOP_CLEAR))));
       } else {
-        v = Math.min(spec.speed, v + CAR_ACCEL * delta);
+        v = 0;
       }
-      pos.current += v * dir * delta;
-      speed.current = v;
-      const reachedEnd =
-        (dir === 1 && pos.current >= endPos - END_MARGIN) ||
-        (dir === -1 && pos.current <= endPos + END_MARGIN);
-      if (reachedEnd) {
-        state.current = "fadeOut";
-        stateT.current = 0;
-      }
-    }
-
-    smokeOn.current = driving && speed.current > 0.5;
-    g.scale.setScalar(scale);
-
-    if (horizontal) {
-      g.position.x = spec.street.x + pos.current;
-      g.position.z = spec.street.z + spec.lane;
-      g.rotation.y = spec.dir > 0 ? 0 : Math.PI;
     } else {
-      g.position.z = spec.street.z + pos.current;
-      g.position.x = spec.street.x + spec.lane;
-      g.rotation.y = spec.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+      v = Math.min(spec.speed, v + CAR_ACCEL * delta);
     }
+
+    t.current += (v * delta) / edge.length;
+    if (t.current >= 1) {
+      const at = b.id;
+      const cameFrom = a.id;
+      const candidates = graph.adjacency[at].filter((eid) => graph.edges[eid].to !== cameFrom);
+      let next = candidates[0] ?? edge.id;
+      if (candidates.length > 1) {
+        const straight = candidates.filter((eid) => {
+          const e = graph.edges[eid];
+          if (e.axis !== edge.axis) return false;
+          const other = graph.nodes[e.to];
+          if (edge.axis === "x") return Math.sign(b.x - a.x) === Math.sign(other.x - b.x);
+          return Math.sign(b.z - a.z) === Math.sign(other.z - b.z);
+        });
+        if (straight.length > 0 && Math.random() < 0.65) {
+          next = straight[0];
+        } else {
+          next = candidates[Math.floor(Math.random() * candidates.length)];
+        }
+      }
+      edgeIdx.current = next;
+      t.current -= 1;
+    }
+    speed.current = v;
+
+    const x = a.x + (b.x - a.x) * t.current;
+    const z = a.z + (b.z - a.z) * t.current;
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const len = Math.hypot(dx, dz) || 1;
+    heading.current = { x: dx / len, z: dz / len };
+
+    g.position.set(x, 0, z);
+    g.rotation.y = Math.atan2(dz, dx);
+    g.scale.setScalar(1);
+    smokeOn.current = v > 0.5;
   });
 
   return (
@@ -306,7 +315,7 @@ function CarMover({
       <group ref={ref}>
         <InstancedVoxels voxels={voxels} voxelSize={spec.size} />
       </group>
-      <VehicleSmoke carRef={ref} dir={spec.dir} axis={horizontal ? "x" : "z"} enabledRef={smokeOn} />
+      <VehicleSmoke carRef={ref} headingRef={heading} enabledRef={smokeOn} />
     </>
   );
 }
@@ -366,42 +375,21 @@ export function Traffic({
   streets,
   intersections,
   controller,
+  graph,
 }: {
   streets: Street[];
   intersections: Intersection[];
   controller: TrafficController;
+  graph: RoadGraph;
 }) {
   const specs = useTrafficSpecs(streets);
-
-  const lightsByStreet = useMemo(() => {
-    const map = new Map<number, { x: number; id: number }[]>();
-    for (const spec of specs) {
-      if (spec.kind !== "car") continue;
-      const horizontal = spec.street.width >= spec.street.depth;
-      const onStreet = intersections.filter((it) =>
-        horizontal ? Math.abs(it.z - spec.street.z) < 0.01 : Math.abs(it.x - spec.street.x) < 0.01,
-      );
-      map.set(
-        spec.street.x * 1000 + spec.street.z,
-        onStreet
-          .map((it) => ({ x: it.x, id: it.id }))
-          .sort((a, b) => a.x - b.x),
-      );
-    }
-    return map;
-  }, [specs, intersections]);
 
   return (
     <group>
       <TrafficLights controller={controller} intersections={intersections} />
       {specs.map((spec, i) =>
         spec.kind === "car" ? (
-          <CarMover
-            key={i}
-            spec={spec}
-            controller={controller}
-            lights={lightsByStreet.get(spec.street.x * 1000 + spec.street.z) ?? []}
-          />
+          <WaypointCar key={i} spec={spec} graph={graph} controller={controller} />
         ) : (
           <FootMover key={i} spec={spec} />
         ),

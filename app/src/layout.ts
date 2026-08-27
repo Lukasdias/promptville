@@ -128,3 +128,54 @@ export function buildStreets(blocks: PlacedBlock[]): Street[] {
 
   return streets;
 }
+
+export interface Bounds {
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+}
+
+export function cityBounds(blocks: PlacedBlock[]): Bounds | null {
+  if (blocks.length === 0) return null;
+  return {
+    minX: Math.min(...blocks.map((b) => b.x - b.width / 2)),
+    maxX: Math.max(...blocks.map((b) => b.x + b.width / 2)),
+    minZ: Math.min(...blocks.map((b) => b.z - b.depth / 2)),
+    maxZ: Math.max(...blocks.map((b) => b.z + b.depth / 2)),
+  };
+}
+
+// A rectangular ring road just outside the city, connecting every avenue end and
+// vertical street so the road network has no dead ends.
+export function buildPerimeterRing(bounds: Bounds): Street[] {
+  const spanX = bounds.maxX - bounds.minX;
+  const spanZ = bounds.maxZ - bounds.minZ;
+  const cx = (bounds.minX + bounds.maxX) / 2;
+  const cz = (bounds.minZ + bounds.maxZ) / 2;
+  return [
+    { x: cx, z: bounds.minZ - ROAD_WIDTH / 2, width: spanX + ROAD_WIDTH * 2, depth: ROAD_WIDTH },
+    { x: cx, z: bounds.maxZ + ROAD_WIDTH / 2, width: spanX + ROAD_WIDTH * 2, depth: ROAD_WIDTH },
+    { x: bounds.minX - ROAD_WIDTH / 2, z: cz, width: ROAD_WIDTH, depth: spanZ + ROAD_WIDTH * 2 },
+    { x: bounds.maxX + ROAD_WIDTH / 2, z: cz, width: ROAD_WIDTH, depth: spanZ + ROAD_WIDTH * 2 },
+  ];
+}
+
+// Extends every road to the centerlines of the roads it meets, so all street
+// dead-ends become real crossings (no gap between rectangle ends and junctions).
+export function extendRoadsToRing(streets: Street[], bounds: Bounds): Street[] {
+  const ringX = bounds.minX - ROAD_WIDTH / 2;
+  const ringX2 = bounds.maxX + ROAD_WIDTH / 2;
+
+  return streets.map((s) => {
+    if (s.width >= s.depth) {
+      // Avenues span the full ring width.
+      return { x: (ringX + ringX2) / 2, z: s.z, width: ringX2 - ringX, depth: s.depth };
+    }
+    // Vertical streets extend by half a road on each end to meet the avenue/ring
+    // centerlines above and below.
+    const top = s.z - s.depth / 2;
+    const bottom = s.z + s.depth / 2;
+    return { x: s.x, z: (top + bottom) / 2, depth: bottom - top + ROAD_WIDTH, width: s.width };
+  });
+}

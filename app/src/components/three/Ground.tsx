@@ -1,5 +1,6 @@
 import type { PlacedBlock, Street } from "../../layout";
 import { useApp } from "../../store";
+import { isPanActive } from "../../pan";
 import { COLORS } from "../../theme";
 import { pickParkSpot } from "../../placement";
 
@@ -42,6 +43,7 @@ export function Ground({
 }) {
   const clearSelection = useApp((s) => s.clearSelection);
   const clear = (e: { stopPropagation: () => void }) => {
+    if (isPanActive()) return;
     e.stopPropagation();
     clearSelection();
   };
