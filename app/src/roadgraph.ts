@@ -86,3 +86,40 @@ export function buildRoadGraph(streets: Street[], intersections: Intersection[])
 
   return { nodes, edges, adjacency };
 }
+
+// Shortest path (by road length) from start node to goal node, following directed
+// edges. Returns a list of node ids; [start] if no route exists.
+export function planRoute(graph: RoadGraph, start: number, goal: number): number[] {
+  if (start === goal) return [start];
+  const n = graph.nodes.length;
+  const dist = new Array<number>(n).fill(Infinity);
+  const prev = new Array<number>(n).fill(-1);
+  const visited = new Array<boolean>(n).fill(false);
+  dist[start] = 0;
+
+  for (let i = 0; i < n; i++) {
+    let u = -1;
+    for (let k = 0; k < n; k++) {
+      if (!visited[k] && (u === -1 || dist[k] < dist[u])) u = k;
+    }
+    if (u === -1 || dist[u] === Infinity) break;
+    visited[u] = true;
+    for (const eid of graph.adjacency[u]) {
+      const e = graph.edges[eid];
+      const nd = dist[u] + e.length;
+      if (nd < dist[e.to]) {
+        dist[e.to] = nd;
+        prev[e.to] = u;
+      }
+    }
+  }
+
+  if (dist[goal] === Infinity) return [start];
+  const path = [goal];
+  let cur = goal;
+  while (cur !== start) {
+    cur = prev[cur];
+    path.unshift(cur);
+  }
+  return path;
+}

@@ -4,7 +4,7 @@ import type { Group } from "three";
 import type { Street } from "../../layout";
 import { traffic } from "../../config";
 import type { Intersection, TrafficController } from "../../traffic";
-import type { RoadGraph } from "../../roadgraph";
+import { planRoute, type RoadGraph } from "../../roadgraph";
 import { carVoxels, personVoxels, type Voxel } from "../../voxel";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { TrafficLights } from "./TrafficLights";
@@ -45,7 +45,13 @@ function smooth(t: number): number {
   return c * c * (3 - 2 * c);
 }
 
-type Kind = "car" | "runner" | "walker";
+type Kind = "runner" | "walker";
+
+interface CarSpec {
+  color: string;
+  size: number;
+  speed: number;
+}
 
 interface TrafficSpec {
   street: Street;
@@ -57,24 +63,22 @@ interface TrafficSpec {
   lane: number;
 }
 
+function useCarSpecs(): CarSpec[] {
+  return useMemo(() => {
+    const rand = mulberry32(777);
+    return Array.from({ length: traffic.cars }, (_, i) => ({
+      color: CAR_COLORS[i % CAR_COLORS.length],
+      size: CAR_SIZE,
+      speed: 2.4 + rand() * 1.6,
+    }));
+  }, []);
+}
+
 function useTrafficSpecs(streets: Street[]): TrafficSpec[] {
   return useMemo(() => {
     if (streets.length === 0) return [];
     const rand = mulberry32(777);
     const horizontals = streets.filter((s) => s.width >= s.depth);
-
-    const cars: TrafficSpec[] = Array.from({ length: traffic.cars }, (_, i) => {
-      const street = (horizontals[i % horizontals.length] ?? streets[i % streets.length])!;
-      return {
-        street,
-        kind: "car",
-        color: CAR_COLORS[i % CAR_COLORS.length],
-        size: CAR_SIZE,
-        speed: 2.4 + rand() * 1.6,
-        dir: i % 2 === 0 ? 1 : -1,
-        lane: 0,
-      };
-    });
 
     const runners: TrafficSpec[] = Array.from({ length: traffic.runners }, (_, i) => {
       const street = streets[(i * 7) % streets.length]!;
@@ -105,7 +109,7 @@ function useTrafficSpecs(streets: Street[]): TrafficSpec[] {
       };
     });
 
-    return [...cars, ...runners, ...walkers];
+    return [...runners, ...walkers];
   }, [streets]);
 }
 
@@ -229,14 +233,14 @@ function stepLifecycle(
   return { scale, driving };
 }
 
-// Cars drive the road graph forever: follow a directed edge, brake at red lights,
-// and pick the next edge at each node (straight-through preferred, no U-turns).
+// Cars drive planned shortest-path routes across the road graph: pick a destination,
+// follow the route node by node (braking at red lights), then choose a new one.
 function WaypointCar({
-  spec,
+  car,
   graph,
   controller,
 }: {
-  spec: TrafficSpec;
+  car: CarSpec;
   graph: RoadGraph;
   controller: TrafficController;
 }) {
@@ -244,68 +248,58 @@ function WaypointCar({
   const heading = useRef({ x: 1, z: 0 });
   const smokeOn = useRef(true);
 
-  const { edgeIdx, t, speed } = useMemo(() => {
-    const startEdge = Math.floor(Math.random() * Math.max(1, graph.edges.length));
-    return { edgeIdx: { current: startEdge }, t: { current: Math.random() }, speed: { current: 0 } };
-  }, [graph]);
+  const route = useRef<number[]>([]);
+  const routeIdx = useRef(0);
+  const t = useRef(0);
+  const speed = useRef(0);
 
-  const voxels = useMemo(() => carVoxels(spec.color), [spec.color]);
+  const voxels = useMemo(() => carVoxels(car.color), [car.color]);
 
   useFrame((_, delta) => {
     const g = ref.current;
     if (!g) return;
-    const edge = graph.edges[edgeIdx.current];
-    const a = graph.nodes[edge.from];
-    const b = graph.nodes[edge.to];
+
+    // Replan when we arrive at the end of the current route.
+    if (route.current.length === 0 || routeIdx.current >= route.current.length) {
+      const from = route.current.length > 0 ? route.current[route.current.length - 1] : Math.floor(Math.random() * graph.nodes.length);
+      let goal = Math.floor(Math.random() * graph.nodes.length);
+      while (goal === from) goal = Math.floor(Math.random() * graph.nodes.length);
+      route.current = planRoute(graph, from, goal);
+      routeIdx.current = 1;
+      t.current = 0;
+    }
+
+    const a = graph.nodes[route.current[routeIdx.current - 1]];
+    const b = graph.nodes[route.current[routeIdx.current]];
+    const axis: "x" | "z" = a.x === b.x ? "z" : "x";
+    const length = Math.hypot(b.x - a.x, b.z - a.z) || 1;
 
     let v = speed.current;
-    const remaining = (1 - t.current) * edge.length;
-    const target = graph.nodes[edge.to];
-
-    if (target.intersectionId !== null && !controller.greenFor(target.intersectionId, edge.axis)) {
+    const remaining = (1 - t.current) * length;
+    if (b.intersectionId !== null && !controller.greenFor(b.intersectionId, axis)) {
       if (remaining > STOP_CLEAR) {
         v = Math.max(0, Math.min(v, Math.sqrt(2 * CAR_BRAKE * (remaining - STOP_CLEAR))));
       } else {
         v = 0;
       }
     } else {
-      v = Math.min(spec.speed, v + CAR_ACCEL * delta);
+      v = Math.min(car.speed, v + CAR_ACCEL * delta);
     }
 
-    t.current += (v * delta) / edge.length;
+    t.current += (v * delta) / length;
     if (t.current >= 1) {
-      const at = b.id;
-      const cameFrom = a.id;
-      const candidates = graph.adjacency[at].filter((eid) => graph.edges[eid].to !== cameFrom);
-      let next = candidates[0] ?? edge.id;
-      if (candidates.length > 1) {
-        const straight = candidates.filter((eid) => {
-          const e = graph.edges[eid];
-          if (e.axis !== edge.axis) return false;
-          const other = graph.nodes[e.to];
-          if (edge.axis === "x") return Math.sign(b.x - a.x) === Math.sign(other.x - b.x);
-          return Math.sign(b.z - a.z) === Math.sign(other.z - b.z);
-        });
-        if (straight.length > 0 && Math.random() < 0.65) {
-          next = straight[0];
-        } else {
-          next = candidates[Math.floor(Math.random() * candidates.length)];
-        }
-      }
-      edgeIdx.current = next;
+      routeIdx.current += 1;
       t.current -= 1;
     }
     speed.current = v;
 
     const x = a.x + (b.x - a.x) * t.current;
     const z = a.z + (b.z - a.z) * t.current;
-    const dx = b.x - a.x;
-    const dz = b.z - a.z;
-    const len = Math.hypot(dx, dz) || 1;
-    heading.current = { x: dx / len, z: dz / len };
+    const len = length || 1;
+    heading.current = { x: (b.x - a.x) / len, z: (b.z - a.z) / len };
 
     g.position.set(x, 0, z);
-    g.rotation.y = Math.atan2(dz, dx);
+    g.rotation.y = Math.atan2(b.z - a.z, b.x - a.x);
     g.scale.setScalar(1);
     smokeOn.current = v > 0.5;
   });
@@ -313,7 +307,7 @@ function WaypointCar({
   return (
     <>
       <group ref={ref}>
-        <InstancedVoxels voxels={voxels} voxelSize={spec.size} />
+        <InstancedVoxels voxels={voxels} voxelSize={car.size} />
       </group>
       <VehicleSmoke carRef={ref} headingRef={heading} enabledRef={smokeOn} />
     </>
@@ -383,17 +377,17 @@ export function Traffic({
   graph: RoadGraph;
 }) {
   const specs = useTrafficSpecs(streets);
+  const cars = useCarSpecs();
 
   return (
     <group>
       <TrafficLights controller={controller} intersections={intersections} />
-      {specs.map((spec, i) =>
-        spec.kind === "car" ? (
-          <WaypointCar key={i} spec={spec} graph={graph} controller={controller} />
-        ) : (
-          <FootMover key={i} spec={spec} />
-        ),
-      )}
+      {cars.map((car, i) => (
+        <WaypointCar key={i} car={car} graph={graph} controller={controller} />
+      ))}
+      {specs.map((spec, i) => (
+        <FootMover key={`f${i}`} spec={spec} />
+      ))}
     </group>
   );
 }

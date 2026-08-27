@@ -7,7 +7,7 @@ import {
   cityBounds,
 } from "./layout";
 import { findIntersections } from "./traffic";
-import { buildRoadGraph, hasNode } from "./roadgraph";
+import { buildRoadGraph, hasNode, planRoute } from "./roadgraph";
 
 const projects = [
   { id: "a", name: "A", sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })) },
@@ -107,5 +107,49 @@ describe("buildRoadGraph", () => {
       }
     }
     expect(seen.size).toBe(graph.nodes.length);
+  });
+});
+
+describe("planRoute", () => {
+  const blocks = layoutCity(projects);
+  const bounds = cityBounds(blocks)!;
+  const main = buildStreets(blocks);
+  const all = [...extendRoadsToRing(main, bounds), ...buildPerimeterRing(bounds)];
+  const intersections = findIntersections(all);
+  const graph = buildRoadGraph(all, intersections);
+
+  test("returns a valid directed path from start to goal", () => {
+    const start = 0;
+    const goal = graph.nodes.length - 1;
+    const path = planRoute(graph, start, goal);
+    expect(path[0]).toBe(start);
+    expect(path[path.length - 1]).toBe(goal);
+    expect(path.length).toBeGreaterThan(1);
+    for (let i = 0; i < path.length - 1; i++) {
+      const from = path[i];
+      const to = path[i + 1];
+      const connected = graph.adjacency[from].some((eid) => graph.edges[eid].to === to);
+      expect(connected).toBe(true);
+    }
+  });
+
+  test("shortest path for a direct edge is just [start, goal]", () => {
+    const e = graph.edges.find((edge) => edge.length > 0)!;
+    const path = planRoute(graph, e.from, e.to);
+    expect(path).toEqual([e.from, e.to]);
+  });
+
+  test("same start and goal returns a single-node path", () => {
+    expect(planRoute(graph, 3, 3)).toEqual([3]);
+  });
+
+  test("finds a shorter route than the naive hop count when lengths vary", () => {
+    // Every node is reachable and paths never have dead ends, so a route always exists.
+    for (let i = 0; i < graph.nodes.length; i++) {
+      const g = (i * 7 + 3) % graph.nodes.length;
+      const path = planRoute(graph, i, g);
+      expect(path[0]).toBe(i);
+      expect(path[path.length - 1]).toBe(g);
+    }
   });
 });
