@@ -198,9 +198,11 @@ describe("environmental blueprints", () => {
     expect(voxels.every((v) => v.color === CONE_COLOR)).toBe(true);
   });
 
-  test("traffic light is a pole with a lamp box on top", () => {
+  test("traffic light is a pole with a housing and R/Y/G lenses", () => {
     const voxels = trafficLightVoxels();
-    expect(voxels).toHaveLength(5);
-    expect(voxels.filter((v) => v.y === 4)).toHaveLength(1);
+    expect(voxels).toHaveLength(15);
+    expect(voxels.some((v) => v.color === "#ff5252" && v.y === 5)).toBe(true);
+    expect(voxels.some((v) => v.color === "#ffd24a" && v.y === 4)).toBe(true);
+    expect(voxels.some((v) => v.color === "#3ddc64" && v.y === 3)).toBe(true);
   });
 });

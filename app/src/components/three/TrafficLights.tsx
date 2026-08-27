@@ -1,12 +1,17 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { AdditiveBlending, Color, type Mesh, type MeshStandardMaterial, type PointLight } from "three";
+import type { Street } from "../../layout";
 import type { Intersection, TrafficController } from "../../traffic";
 import { trafficLightVoxels, TRAFFIC_GREEN, TRAFFIC_YELLOW, TRAFFIC_RED } from "../../voxel";
 import { InstancedVoxels } from "./InstancedVoxels";
 
 const LIGHT_SIZE = 0.22;
-const LAMP_Y = { green: 1.0, yellow: 1.3, red: 1.6 } as const;
+// Lens voxel y-centers in the blueprint map to these world heights.
+const LAMP_Y = { green: 3.5 * LIGHT_SIZE, yellow: 4.5 * LIGHT_SIZE, red: 5.5 * LIGHT_SIZE };
+// Half the sidewalk width: the light stands on the sidewalk at the corner.
+const SIDEWALK_CENTER = 0.35;
+const ROAD_HALF = 1.75;
 
 // Radial additive glow, billboarded toward the camera. This is the "shader" part
 // of the signal — a soft light bloom instead of a flat box.
@@ -61,9 +66,11 @@ function GlowPlane({
 function TrafficLight({
   controller,
   intersection,
+  streets,
 }: {
   controller: TrafficController;
   intersection: Intersection;
+  streets: Street[];
 }) {
   const greenMat = useRef<MeshStandardMaterial>(null);
   const yellowMat = useRef<MeshStandardMaterial>(null);
@@ -73,6 +80,12 @@ function TrafficLight({
   const greenActive = useRef(false);
   const yellowActive = useRef(false);
   const redActive = useRef(false);
+
+  // Stand on the sidewalk at the corner: offset from the crossing centerlines.
+  const avenue = streets.find((s) => s.width >= s.depth && Math.abs(s.z - intersection.z) < 0.01);
+  const vertical = streets.find((s) => s.width < s.depth && Math.abs(s.x - intersection.x) < 0.01);
+  const offsetX = (vertical?.width ?? ROAD_HALF * 2) / 2 + SIDEWALK_CENTER;
+  const offsetZ = (avenue?.depth ?? ROAD_HALF * 2) / 2 + SIDEWALK_CENTER;
 
   useFrame(() => {
     const color = controller.signalColorFor(intersection.id);
@@ -106,7 +119,7 @@ function TrafficLight({
   });
 
   return (
-    <group position={[intersection.x, 0, intersection.z]}>
+    <group position={[intersection.x + offsetX, 0, intersection.z + offsetZ]}>
       <InstancedVoxels voxels={trafficLightVoxels()} voxelSize={LIGHT_SIZE} />
       <mesh position={[0, LAMP_Y.green, 0]}>
         <boxGeometry args={[0.18, 0.18, 0.18]} />
@@ -131,15 +144,17 @@ function TrafficLight({
 export function TrafficLights({
   controller,
   intersections,
+  streets,
 }: {
   controller: TrafficController;
   intersections: Intersection[];
+  streets: Street[];
 }) {
   useFrame((_, delta) => controller.tick(delta));
   return (
     <group>
       {intersections.map((it) => (
-        <TrafficLight key={it.id} controller={controller} intersection={it} />
+        <TrafficLight key={it.id} controller={controller} intersection={it} streets={streets} />
       ))}
     </group>
   );

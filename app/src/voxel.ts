@@ -253,8 +253,16 @@ export function trafficLightVoxels(
   box: string = TRAFFIC_BOX,
 ): Voxel[] {
   const voxels: Voxel[] = [];
-  for (let y = 0; y < 4; y++) voxels.push({ x: 0, y, z: 0, color: pole });
-  voxels.push({ x: 0, y: 4, z: 0, color: box });
+  // Pole
+  for (let y = 0; y <= 2; y++) voxels.push({ x: 0, y, z: 0, color: pole });
+  // Signal housing (3×3)
+  for (let y = 3; y <= 5; y++) {
+    for (let x = -1; x <= 1; x++) voxels.push({ x, y, z: 0, color: box });
+  }
+  // Lenses: red top, yellow middle, green bottom (protrude on the front face)
+  voxels.push({ x: 0, y: 5, z: 1, color: TRAFFIC_RED });
+  voxels.push({ x: 0, y: 4, z: 1, color: TRAFFIC_YELLOW });
+  voxels.push({ x: 0, y: 3, z: 1, color: TRAFFIC_GREEN });
   return voxels;
 }
 

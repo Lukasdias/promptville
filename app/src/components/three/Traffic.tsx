@@ -14,6 +14,9 @@ const CAR_COLORS = ["#ff8fa3", "#ffd166", "#7fb6ff", "#b0f2b4", "#ffa86b"];
 const RUNNER_COLORS = ["#ffb3ba", "#bae1ff", "#baffc9", "#ffffba", "#d4baff", "#ffd1dc"];
 const WALKER_COLORS = ["#f0c4ff", "#e6ffba", "#c9f2ff", "#ffdfba"];
 
+// Center of the sidewalk strip (street edge + half the sidewalk width).
+const SIDEWALK_CENTER = 0.35;
+
 const CAR_SIZE = 0.2;
 const PUFF_VOXELS: Voxel[] = [{ x: 0, y: 0, z: 0, color: "#dcdcdc" }];
 const PUFF_COUNT = 4;
@@ -85,6 +88,8 @@ function useTrafficSpecs(streets: Street[]): TrafficSpec[] {
 
     const runners: TrafficSpec[] = Array.from({ length: traffic.runners }, (_, i) => {
       const street = streets[(i * 7) % streets.length]!;
+      const horizontal = street.width >= street.depth;
+      const edge = horizontal ? street.depth / 2 + SIDEWALK_CENTER : street.width / 2 + SIDEWALK_CENTER;
       return {
         street,
         kind: "runner",
@@ -92,7 +97,7 @@ function useTrafficSpecs(streets: Street[]): TrafficSpec[] {
         size: 0.15,
         speed: 1.6 + rand() * 0.8,
         dir: i % 2 === 0 ? 1 : -1,
-        lane: i % 2 === 0 ? 0.5 : -0.5,
+        lane: i % 2 === 0 ? edge : -edge,
       };
     });
 
@@ -100,7 +105,7 @@ function useTrafficSpecs(streets: Street[]): TrafficSpec[] {
     const walkers: TrafficSpec[] = Array.from({ length: traffic.walkers }, (_, i) => {
       const street = streets[(i * 5) % streets.length]!;
       const horizontal = street.width >= street.depth;
-      const edge = horizontal ? street.depth / 2 + 0.35 : street.width / 2 + 0.35;
+      const edge = horizontal ? street.depth / 2 + SIDEWALK_CENTER : street.width / 2 + SIDEWALK_CENTER;
       return {
         street,
         kind: "walker",
@@ -386,7 +391,7 @@ export function Traffic({
 
   return (
     <group>
-      <TrafficLights controller={controller} intersections={intersections} />
+      <TrafficLights controller={controller} intersections={intersections} streets={streets} />
       {cars.map((car, i) => (
         <WaypointCar key={i} car={car} graph={graph} controller={controller} />
       ))}
