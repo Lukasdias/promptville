@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   layoutCity,
+  buildStreets,
   houseScale,
   HOUSE_SPACING,
   HOUSE_PAD,
@@ -55,6 +56,56 @@ describe("layoutCity", () => {
       expect(sameRow || nextRow).toBe(true);
     }
     expect(HOUSE_PAD).toBeGreaterThan(0);
+  });
+});
+
+describe("buildStreets", () => {
+  const blocks = layoutCity(projects);
+
+  test("produces horizontal avenues between rows and vertical streets between blocks", () => {
+    const streets = buildStreets(blocks);
+    // 5 blocks → 1 row boundary below the first 4; row 2 has 1 block (no gaps)
+    const horizontals = streets.filter((s) => s.depth < s.width);
+    const verticals = streets.filter((s) => s.width < s.depth);
+    expect(horizontals).toHaveLength(1);
+    expect(verticals).toHaveLength(3); // 3 gaps in the first row
+  });
+
+  test("horizontal avenues span the full city width", () => {
+    const streets = buildStreets(blocks);
+    const horizontal = streets.find((s) => s.depth < s.width)!;
+    const minX = Math.min(...blocks.map((b) => b.x - b.width / 2));
+    const maxX = Math.max(...blocks.map((b) => b.x + b.width / 2));
+    expect(horizontal.width).toBeCloseTo(maxX - minX);
+  });
+
+  test("every street fills the gap exactly and never overlaps a block", () => {
+    const streets = buildStreets(blocks);
+    const eps = 0.001;
+    for (const s of streets) {
+      for (const b of blocks) {
+        const overlap =
+          s.x + s.width / 2 > b.x - b.width / 2 + eps &&
+          s.x - s.width / 2 < b.x + b.width / 2 - eps &&
+          s.z + s.depth / 2 > b.z - b.depth / 2 + eps &&
+          s.z - s.depth / 2 < b.z + b.depth / 2 - eps;
+        expect(overlap).toBe(false);
+      }
+    }
+  });
+
+  test("all streets lie within the city bounds", () => {
+    const streets = buildStreets(blocks);
+    const minX = Math.min(...blocks.map((b) => b.x - b.width / 2));
+    const maxX = Math.max(...blocks.map((b) => b.x + b.width / 2));
+    const minZ = Math.min(...blocks.map((b) => b.z - b.depth / 2));
+    const maxZ = Math.max(...blocks.map((b) => b.z + b.depth / 2));
+    for (const s of streets) {
+      expect(s.x - s.width / 2).toBeGreaterThanOrEqual(minX);
+      expect(s.x + s.width / 2).toBeLessThanOrEqual(maxX);
+      expect(s.z - s.depth / 2).toBeGreaterThanOrEqual(minZ);
+      expect(s.z + s.depth / 2).toBeLessThanOrEqual(maxZ);
+    }
   });
 });
 

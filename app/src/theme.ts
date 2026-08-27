@@ -16,9 +16,12 @@ export const UNKNOWN_ROOF = "#b0a89a";
 export const COLORS = {
   sky: "#aee6ff",
   grass: "#9bd46a",
+  grassLot: "#8fbf5c",
   grassDark: "#86c255",
   road: "#f3e3c0",
   roadLine: "#fff6e5",
   cream: "#fff6e5",
   ink: "#4a4453",
+  mountain: "#8a9b6e",
+  snow: "#f4f1e6",
 };
