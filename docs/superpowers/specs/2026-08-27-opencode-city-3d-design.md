@@ -12,7 +12,7 @@ Status: Draft
 - **Runtime**: Bun (`bun:sqlite`, `Bun.serve`)
 - **Frontend**: Vite + React 19 + TypeScript
 - **3D**: `@react-three/fiber`, `@react-three/drei`, `three`
-- **State**: Zustand
+- **State**: TanStack Query (v5) for async data (`/api/neighborhood`); Zustand only for UI selection state.
 - **Styling**: Tailwind CSS (HUD only; the 3D scene is Three.js)
 - **Fonts**: Fredoka (display) + Nunito (body) via Google Fonts
 - **Reference**: R3F patterns applied throughout — see `docs/r3f-reference.md`
@@ -27,9 +27,10 @@ opencode-city/
   app/
     index.html
     src/
-      main.tsx
+      main.tsx              # QueryClientProvider + fonts
       App.tsx               # canvas + HUD layout
-      store.ts              # zustand: data, selected session, filters
+      store.ts              # zustand: selected session only
+      query.ts              # tanstack-query: neighborhoodQueryOptions + useNeighborhood
       api.ts                # fetch /api/neighborhood
       types.ts
       components/
@@ -92,7 +93,9 @@ Source: `~/.local/share/opencode/opencode.db`, opened **read-only** via `bun:sql
 
 Queries: join `session` → `project` (via `project_id`), parse `model` JSON. `tokens` = `tokens_input + tokens_output`. Sessions with empty title default to `(untitled)`.
 
-**Error handling**: DB missing/unreadable → `500` with `{ error }`; frontend renders a cartoon "map not found" state with the resolved DB path.
+**Client data fetching**: the frontend fetches once through TanStack Query (`useNeighborhood`, query key `['neighborhood']`, `staleTime` 5 min, no refetch on window focus) and shares the result across the scene and HUD. A manual page refresh re-fetches.
+
+**Error handling**: DB missing/unreadable → `500` with `{ error }`; the query surfaces `isError`/`error` and the frontend renders a cartoon "map not found" state with the resolved DB path.
 
 ## 3D Scene
 
