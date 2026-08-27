@@ -10,11 +10,12 @@
 ## Architecture
 
 Monorepo with two Bun workspaces:
-- `server/` - Bun.serve API, reads `~/.local/share/opencode/opencode.db` **read-only** via `bun:sqlite`. Endpoint: `GET /api/neighborhood`.
+- `server/` - Bun.serve API, reads `~/.local/share/opencode/opencode.db` **read-only** via `bun:sqlite` + Drizzle ORM (`drizzle-orm/bun-sqlite`). Endpoint: `GET /api/neighborhood`.
 - `app/` - Vite + React 19 + React Three Fiber (R3F) 9 + drei 10 + three. Async data via TanStack Query v5 (`app/src/query.ts`); Zustand only for UI selection state.
 
 Key files:
-- `server/db.ts` - queries, types, stats aggregation. `db.query` needs 2 type args: `.query<RowType, any[]>` (bun-types 1.4).
+- `server/schema.ts` - Drizzle table definitions mirroring the opencode DB (session, project) — read-only model, opencode owns the schema.
+- `server/db.ts` - Drizzle queries + stats aggregation. `openDb` returns a `bun:sqlite` `Database`; `queryNeighborhood` wraps it via `createDb`.
 - `app/src/layout.ts` - city layout + street graph (pure, tested).
 - `app/src/components/three/` - scene components (Scene, City, Block, House, Ground, World, Mountains, SelectedBanner).
 - `app/src/components/hud/` - HUD overlay (Header, StatsPanel, DetailCard, HintBar, MissingState).

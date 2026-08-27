@@ -1,4 +1,7 @@
 import { Database } from "bun:sqlite";
+import { asc, eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/bun-sqlite";
+import { project, session } from "./schema";
 
 export interface SessionData {
   id: string;
@@ -39,6 +42,10 @@ export function openDb(path: string): Database {
   return new Database(path, { readonly: true });
 }
 
+export function createDb(db: Database) {
+  return drizzle(db, { schema: { project, session } });
+}
+
 function basename(p: string): string {
   const parts = p.replace(/\/+$/, "").split("/");
   return parts[parts.length - 1] ?? p;
@@ -51,28 +58,12 @@ function projectName(name: string | null, worktree: string): string {
 }
 
 export function queryNeighborhood(db: Database): Neighborhood {
-  const rows = db
-    .query<
-      {
-        id: string;
-        title: string;
-        model: string | null;
-        agent: string | null;
-        cost: number;
-        tokens_input: number;
-        tokens_output: number;
-        time_created: number;
-        project_id: string;
-        worktree: string;
-        name: string | null;
-        icon_color: string | null;
-      },
-      any[]
-    >(`SELECT s.id, s.title, s.model, s.agent, s.cost,
-                s.tokens_input, s.tokens_output, s.time_created,
-                p.id AS project_id, p.worktree, p.name, p.icon_color
-         FROM session s JOIN project p ON p.id = s.project_id
-         ORDER BY s.time_created ASC, s.id ASC`)
+  const client = createDb(db);
+  const rows = client
+    .select()
+    .from(session)
+    .innerJoin(project, eq(session.projectId, project.id))
+    .orderBy(asc(session.timeCreated), asc(session.id))
     .all();
 
   const projects = new Map<string, ProjectData>();
@@ -81,41 +72,44 @@ export function queryNeighborhood(db: Database): Neighborhood {
   const agentCounts = new Map<string, number>();
   const projectCounts = new Map<string, number>();
 
-  for (const r of rows) {
-    const day = new Date(r.time_created).toISOString().slice(0, 10);
+  for (const row of rows) {
+    const s = row.session;
+    const p = row.project;
+
+    const day = new Date(s.timeCreated).toISOString().slice(0, 10);
     dayCounts.set(day, (dayCounts.get(day) ?? 0) + 1);
 
-    const model = r.model ? extractModelId(r.model) : null;
-    const agent = r.agent && r.agent.trim() ? r.agent.trim() : null;
+    const model = s.model ? extractModelId(s.model) : null;
+    const agent = s.agent && s.agent.trim() ? s.agent.trim() : null;
     if (model) modelCounts.set(model, (modelCounts.get(model) ?? 0) + 1);
     if (agent) agentCounts.set(agent, (agentCounts.get(agent) ?? 0) + 1);
 
-    const title = r.title.trim().length > 0 ? r.title.trim() : "(untitled)";
-    const session: SessionData = {
-      id: r.id,
+    const title = s.title.trim().length > 0 ? s.title.trim() : "(untitled)";
+    const sessionData: SessionData = {
+      id: s.id,
       title,
       model,
       agent,
-      cost: r.cost ?? 0,
-      tokensIn: r.tokens_input ?? 0,
-      tokensOut: r.tokens_output ?? 0,
-      timeCreated: r.time_created,
+      cost: s.cost ?? 0,
+      tokensIn: s.tokensInput ?? 0,
+      tokensOut: s.tokensOutput ?? 0,
+      timeCreated: s.timeCreated,
     };
 
-    let project = projects.get(r.project_id);
-    if (!project) {
-      const name = projectName(r.name, r.worktree);
-      project = {
-        id: r.project_id,
+    let projectData = projects.get(p.id);
+    if (!projectData) {
+      const name = projectName(p.name, p.worktree);
+      projectData = {
+        id: p.id,
         name,
-        path: r.worktree,
-        iconColor: r.icon_color,
+        path: p.worktree,
+        iconColor: p.iconColor,
         sessions: [],
       };
-      projects.set(r.project_id, project);
+      projects.set(p.id, projectData);
     }
-    projectCounts.set(project.name, (projectCounts.get(project.name) ?? 0) + 1);
-    project.sessions.push(session);
+    projectCounts.set(projectData.name, (projectCounts.get(projectData.name) ?? 0) + 1);
+    projectData.sessions.push(sessionData);
   }
 
   const byCount = (map: Map<string, number>) =>

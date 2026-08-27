@@ -39,7 +39,7 @@ Open http://localhost:5173. The API reads `~/.local/share/opencode/opencode.db` 
 ## Project layout
 
 ```
-server/   Bun.serve API + bun:sqlite queries (read-only)
+server/   Bun.serve API + Drizzle ORM over bun:sqlite (read-only)
 app/      Vite + React 19 + React Three Fiber frontend
 docs/     design spec, implementation plan, R3F reference
 ```

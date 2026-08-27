@@ -10,6 +10,7 @@ Status: Draft
 ## Stack
 
 - **Runtime**: Bun (`bun:sqlite`, `Bun.serve`)
+- **ORM**: Drizzle (`drizzle-orm/bun-sqlite`) — read-only schema model of the opencode DB
 - **Frontend**: Vite + React 19 + TypeScript
 - **3D**: `@react-three/fiber`, `@react-three/drei`, `three`
 - **State**: TanStack Query (v5) for async data (`/api/neighborhood`); Zustand only for UI selection state.
