@@ -1,6 +1,7 @@
 import type { PlacedBlock, Street } from "../../layout";
 import { useApp } from "../../store";
 import { COLORS } from "../../theme";
+import { pickParkSpot } from "../../placement";
 
 const DASH_PERIOD = 2.4;
 const DASH_LENGTH = 1.1;
@@ -28,33 +29,6 @@ function streetDashes(s: Street): Dash[] {
     }
   }
   return out;
-}
-
-function pickParkSpot(
-  blocks: PlacedBlock[],
-  minX: number,
-  maxX: number,
-  minZ: number,
-  maxZ: number,
-): { x: number; z: number } | null {
-  const r = 7;
-  const candidates = [
-    { x: minX + 15, z: minZ + 15 },
-    { x: maxX - 15, z: minZ + 15 },
-    { x: minX + 15, z: maxZ - 15 },
-    { x: maxX - 15, z: maxZ - 15 },
-  ];
-  for (const c of candidates) {
-    const overlaps = blocks.some(
-      (b) =>
-        c.x + r > b.x - b.width / 2 &&
-        c.x - r < b.x + b.width / 2 &&
-        c.z + r > b.z - b.depth / 2 &&
-        c.z - r < b.z + b.depth / 2,
-    );
-    if (!overlaps) return c;
-  }
-  return null;
 }
 
 export function Ground({

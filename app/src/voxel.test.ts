@@ -7,6 +7,14 @@ import {
   carVoxels,
   placeVoxels,
   mountainRingVoxels,
+  bushVoxels,
+  flowersVoxels,
+  mailboxVoxels,
+  signVoxels,
+  benchVoxels,
+  fountainVoxels,
+  hydrantVoxels,
+  coneVoxels,
   DOOR_COLOR,
   WINDOW_COLOR,
   CHIMNEY_COLOR,
@@ -15,6 +23,14 @@ import {
   SKIN_COLOR,
   SNOW_COLOR,
   WHEEL_COLOR,
+  BUSH_COLOR,
+  FLOWER_COLORS,
+  MAILBOX_COLOR,
+  SIGN_BOARD,
+  BENCH_WOOD,
+  FOUNTAIN_WATER,
+  HYDRANT_COLOR,
+  CONE_COLOR,
 } from "./voxel";
 
 describe("houseVoxels", () => {
@@ -131,5 +147,53 @@ describe("personVoxels / carVoxels / placeVoxels", () => {
     expect(placed[0].x).toBeCloseTo(3.5 / 0.15 - 0.5);
     expect(placed[0].z).toBeCloseTo(-2 / 0.15 - 0.5);
     expect(placed[0].y).toBe(0);
+  });
+});
+
+describe("environmental blueprints", () => {
+  test("bush is a rounded 3-layer blob", () => {
+    const voxels = bushVoxels();
+    expect(voxels).toHaveLength(15);
+    expect(voxels.every((v) => v.color === BUSH_COLOR)).toBe(true);
+  });
+
+  test("flower bed has a ground base and colored blooms on top", () => {
+    const voxels = flowersVoxels();
+    expect(voxels).toHaveLength(13);
+    expect(voxels.filter((v) => v.y === 1 && FLOWER_COLORS.includes(v.color))).toHaveLength(4);
+  });
+
+  test("mailbox is a post with a box and flag", () => {
+    const voxels = mailboxVoxels();
+    expect(voxels).toHaveLength(4);
+    expect(voxels.filter((v) => v.color === MAILBOX_COLOR)).toHaveLength(2);
+  });
+
+  test("sign is a pole with a wide board on top", () => {
+    const voxels = signVoxels();
+    expect(voxels.filter((v) => v.y === 3 && v.color === SIGN_BOARD)).toHaveLength(3);
+  });
+
+  test("bench has legs, seat and back", () => {
+    const voxels = benchVoxels();
+    expect(voxels).toHaveLength(10);
+    expect(voxels.every((v) => v.color === BENCH_WOOD)).toBe(true);
+  });
+
+  test("fountain holds water", () => {
+    const voxels = fountainVoxels();
+    expect(voxels.some((v) => v.color === FOUNTAIN_WATER)).toBe(true);
+  });
+
+  test("hydrant is red with side spouts", () => {
+    const voxels = hydrantVoxels();
+    expect(voxels).toHaveLength(5);
+    expect(voxels.filter((v) => v.color === HYDRANT_COLOR)).toHaveLength(5);
+  });
+
+  test("cone is a small stack", () => {
+    const voxels = coneVoxels();
+    expect(voxels).toHaveLength(3);
+    expect(voxels.every((v) => v.color === CONE_COLOR)).toBe(true);
   });
 });

@@ -17,6 +17,18 @@ export const ANTENNA_COLOR = "#8b8b8b";
 export const ANTENNA_TIP_COLOR = "#ff5252";
 export const MOUNTAIN_COLOR = "#8a9b6e";
 export const SNOW_COLOR = "#f4f1e6";
+export const BUSH_COLOR = "#6fb05e";
+export const FLOWER_COLORS = ["#ff9fc0", "#ffd166", "#b0e0ff", "#d4baff"];
+export const FLOWER_GROUND = "#86c255";
+export const MAILBOX_COLOR = "#7fb6ff";
+export const MAILBOX_POST = "#5a4a3a";
+export const SIGN_POLE = "#3c3a42";
+export const SIGN_BOARD = "#f7f3e8";
+export const BENCH_WOOD = "#c97b4a";
+export const FOUNTAIN_STONE = "#d8d4c8";
+export const FOUNTAIN_WATER = "#7fc9ff";
+export const HYDRANT_COLOR = "#e8503a";
+export const CONE_COLOR = "#ff9f1c";
 
 export interface HouseVoxelOptions {
   body: string;
@@ -135,6 +147,99 @@ export function personVoxels(shirt: string, skin: string = SKIN_COLOR): Voxel[] 
   voxels.push({ x: 0, y: 1, z: 0, color: shirt });
   voxels.push({ x: 0, y: 2, z: 0, color: shirt });
   voxels.push({ x: 0, y: 3, z: 0, color: skin });
+  return voxels;
+}
+
+export function bushVoxels(color: string = BUSH_COLOR): Voxel[] {
+  const voxels: Voxel[] = [];
+  for (let x = -1; x <= 1; x++) {
+    for (let z = -1; z <= 1; z++) voxels.push({ x, y: 0, z, color });
+  }
+  for (let x = -1; x <= 1; x++) voxels.push({ x, y: 1, z: 0, color });
+  voxels.push({ x: 0, y: 1, z: -1, color });
+  voxels.push({ x: 0, y: 1, z: 1, color });
+  voxels.push({ x: 0, y: 2, z: 0, color });
+  return voxels;
+}
+
+export function flowersVoxels(
+  colors: string[] = FLOWER_COLORS,
+  ground: string = FLOWER_GROUND,
+): Voxel[] {
+  const voxels: Voxel[] = [];
+  for (let x = -1; x <= 1; x++) {
+    for (let z = -1; z <= 1; z++) voxels.push({ x, y: 0, z, color: ground });
+  }
+  voxels.push({ x: -1, y: 1, z: -1, color: colors[0] });
+  voxels.push({ x: 1, y: 1, z: -1, color: colors[1] });
+  voxels.push({ x: 0, y: 1, z: 1, color: colors[2] });
+  voxels.push({ x: 0, y: 1, z: 0, color: colors[3] });
+  return voxels;
+}
+
+export function mailboxVoxels(body: string = MAILBOX_COLOR, post: string = MAILBOX_POST): Voxel[] {
+  const voxels: Voxel[] = [];
+  voxels.push({ x: 0, y: 0, z: 0, color: post });
+  voxels.push({ x: 0, y: 1, z: 0, color: post });
+  voxels.push({ x: 0, y: 2, z: 0, color: body });
+  voxels.push({ x: 1, y: 2, z: 0, color: body });
+  return voxels;
+}
+
+export function signVoxels(pole: string = SIGN_POLE, board: string = SIGN_BOARD): Voxel[] {
+  const voxels: Voxel[] = [];
+  for (let y = 0; y < 3; y++) voxels.push({ x: 0, y, z: 0, color: pole });
+  voxels.push({ x: -1, y: 3, z: 0, color: board });
+  voxels.push({ x: 0, y: 3, z: 0, color: board });
+  voxels.push({ x: 1, y: 3, z: 0, color: board });
+  return voxels;
+}
+
+export function benchVoxels(wood: string = BENCH_WOOD): Voxel[] {
+  const voxels: Voxel[] = [];
+  voxels.push({ x: -1, y: 0, z: -1, color: wood });
+  voxels.push({ x: 1, y: 0, z: -1, color: wood });
+  voxels.push({ x: -1, y: 0, z: 1, color: wood });
+  voxels.push({ x: 1, y: 0, z: 1, color: wood });
+  voxels.push({ x: -1, y: 1, z: 0, color: wood });
+  voxels.push({ x: 0, y: 1, z: 0, color: wood });
+  voxels.push({ x: 1, y: 1, z: 0, color: wood });
+  voxels.push({ x: -1, y: 2, z: -1, color: wood });
+  voxels.push({ x: 0, y: 2, z: -1, color: wood });
+  voxels.push({ x: 1, y: 2, z: -1, color: wood });
+  return voxels;
+}
+
+export function fountainVoxels(
+  stone: string = FOUNTAIN_STONE,
+  water: string = FOUNTAIN_WATER,
+): Voxel[] {
+  const voxels: Voxel[] = [];
+  voxels.push({ x: -1, y: 0, z: 0, color: stone });
+  voxels.push({ x: 1, y: 0, z: 0, color: stone });
+  voxels.push({ x: 0, y: 0, z: -1, color: stone });
+  voxels.push({ x: 0, y: 0, z: 1, color: stone });
+  voxels.push({ x: 0, y: 1, z: 0, color: water });
+  voxels.push({ x: 0, y: 2, z: 0, color: stone });
+  voxels.push({ x: 0, y: 3, z: 0, color: stone });
+  return voxels;
+}
+
+export function hydrantVoxels(color: string = HYDRANT_COLOR): Voxel[] {
+  const voxels: Voxel[] = [];
+  voxels.push({ x: 0, y: 0, z: 0, color });
+  voxels.push({ x: 0, y: 1, z: 0, color });
+  voxels.push({ x: 0, y: 2, z: 0, color });
+  voxels.push({ x: 1, y: 2, z: 0, color });
+  voxels.push({ x: -1, y: 2, z: 0, color });
+  return voxels;
+}
+
+export function coneVoxels(color: string = CONE_COLOR): Voxel[] {
+  const voxels: Voxel[] = [];
+  voxels.push({ x: 0, y: 0, z: 0, color });
+  voxels.push({ x: 0, y: 1, z: 0, color });
+  voxels.push({ x: 0, y: 2, z: 0, color });
   return voxels;
 }
 

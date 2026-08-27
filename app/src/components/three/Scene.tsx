@@ -4,6 +4,7 @@ import { buildStreets, layoutCity } from "../../layout";
 import { Ground } from "./Ground";
 import { City } from "./City";
 import { World } from "./World";
+import { Details } from "./Details";
 import { Mountains, mountainOuterRadius } from "./Mountains";
 import { People } from "./People";
 import { Traffic } from "./Traffic";
@@ -37,6 +38,7 @@ export function Scene() {
       <Ground blocks={blocks} streets={streets} extent={extent} />
       <City />
       <World blocks={blocks} streets={streets} />
+      <Details blocks={blocks} streets={streets} />
       <People />
       <Traffic streets={streets} />
       <Mountains blocks={blocks} />
