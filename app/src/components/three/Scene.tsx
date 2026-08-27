@@ -35,7 +35,7 @@ export function Scene() {
       />
       <Ground blocks={blocks} streets={streets} />
       <City />
-      <World />
+      <World blocks={blocks} streets={streets} />
       <People />
       <Traffic streets={streets} />
       <Mountains blocks={blocks} />

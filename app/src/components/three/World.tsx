@@ -1,8 +1,14 @@
 import { useMemo } from "react";
 import { Cloud, Float } from "@react-three/drei";
-import { lampVoxels, treeVoxels } from "../../voxel";
+import type { PlacedBlock, Street } from "../../layout";
+import { lampVoxels, treeVoxels, type Voxel } from "../../voxel";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { COLORS } from "../../theme";
+
+const TREE_SIZE = 0.22;
+const LAMP_SIZE = 0.25;
+const TREE_PAD = 1.0;
+const SPREAD = 26;
 
 function mulberry32(seed: number) {
   return () => {
@@ -14,29 +20,51 @@ function mulberry32(seed: number) {
   };
 }
 
-export function World() {
-  const rand = useMemo(() => mulberry32(1337), []);
-  const trees = useMemo(
-    () =>
-      Array.from({ length: 45 }, (_, i) => ({
-        key: i,
-        x: (rand() - 0.5) * 60,
-        z: (rand() - 0.5) * 60,
-        s: 0.6 + rand() * 0.7,
-        skip: rand() < 0.18,
-      })).filter((t) => !t.skip),
-    [rand],
-  );
+function clearSpot(x: number, z: number, blocks: PlacedBlock[], streets: Street[]): boolean {
+  for (const b of blocks) {
+    const half = b.width / 2 + TREE_PAD;
+    const halfD = b.depth / 2 + TREE_PAD;
+    if (x > b.x - half && x < b.x + half && z > b.z - halfD && z < b.z + halfD) return false;
+  }
+  for (const s of streets) {
+    const hw = s.width / 2 + 0.4;
+    const hd = s.depth / 2 + 0.4;
+    if (x > s.x - hw && x < s.x + hw && z > s.z - hd && z < s.z + hd) return false;
+  }
+  return true;
+}
 
-  const lamps = useMemo(
-    () =>
-      Array.from({ length: 10 }, (_, i) => ({
-        key: i,
-        x: (rand() - 0.5) * 56,
-        z: (rand() - 0.5) * 56,
-      })),
-    [rand],
-  );
+export function World({
+  blocks,
+  streets,
+}: {
+  blocks: PlacedBlock[];
+  streets: Street[];
+}) {
+  const rand = useMemo(() => mulberry32(1337), []);
+
+  const trees = useMemo(() => {
+    const placed: { key: number; x: number; z: number; s: number }[] = [];
+    for (let key = 0; placed.length < 45 && key < 600; key++) {
+      const x = (rand() - 0.5) * 2 * SPREAD;
+      const z = (rand() - 0.5) * 2 * SPREAD;
+      if (!clearSpot(x, z, blocks, streets)) continue;
+      if (rand() < 0.18) continue;
+      placed.push({ key, x, z, s: 0.7 + rand() * 0.6 });
+    }
+    return placed;
+  }, [blocks, streets, rand]);
+
+  const lamps = useMemo(() => {
+    const placed: { key: number; x: number; z: number }[] = [];
+    for (let key = 0; placed.length < 8 && key < 400; key++) {
+      const x = (rand() - 0.5) * 2 * SPREAD;
+      const z = (rand() - 0.5) * 2 * SPREAD;
+      if (!clearSpot(x, z, blocks, streets)) continue;
+      placed.push({ key, x, z });
+    }
+    return placed;
+  }, [blocks, streets, rand]);
 
   return (
     <group>
@@ -49,14 +77,14 @@ export function World() {
       {/* Trees: one instanced voxel mesh per tree, scaled for variety */}
       {trees.map((t) => (
         <group key={t.key} position={[t.x, 0, t.z]} scale={t.s}>
-          <InstancedVoxels voxels={treeVoxels(COLORS.grassDark)} />
+          <InstancedVoxels voxels={treeVoxels(COLORS.grassDark)} voxelSize={TREE_SIZE} />
         </group>
       ))}
 
       {/* Street lamps */}
       {lamps.map((l) => (
         <group key={l.key} position={[l.x, 0, l.z]}>
-          <InstancedVoxels voxels={lampVoxels()} />
+          <InstancedVoxels voxels={lampVoxels()} voxelSize={LAMP_SIZE} />
         </group>
       ))}
     </group>
