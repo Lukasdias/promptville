@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import { Cloud, Float } from "@react-three/drei";
+import { lampVoxels, treeVoxels } from "../../voxel";
+import { InstancedVoxels } from "./InstancedVoxels";
 import { COLORS } from "../../theme";
 
 function mulberry32(seed: number) {
@@ -16,18 +18,20 @@ export function World() {
   const rand = useMemo(() => mulberry32(1337), []);
   const trees = useMemo(
     () =>
-      Array.from({ length: 60 }, () => ({
+      Array.from({ length: 45 }, (_, i) => ({
+        key: i,
         x: (rand() - 0.5) * 60,
         z: (rand() - 0.5) * 60,
         s: 0.6 + rand() * 0.7,
-        skip: rand() < 0.18, // leave some open lawn
+        skip: rand() < 0.18,
       })).filter((t) => !t.skip),
     [rand],
   );
 
   const lamps = useMemo(
     () =>
-      Array.from({ length: 10 }, () => ({
+      Array.from({ length: 10 }, (_, i) => ({
+        key: i,
         x: (rand() - 0.5) * 56,
         z: (rand() - 0.5) * 56,
       })),
@@ -42,31 +46,17 @@ export function World() {
         <Cloud position={[22, 11, 8]} speed={0.5} opacity={0.8} />
       </Float>
 
-      {/* Trees */}
-      {trees.map((t, i) => (
-        <group key={i} position={[t.x, 0, t.z]} scale={t.s}>
-          <mesh castShadow position={[0, 0.35, 0]}>
-            <cylinderGeometry args={[0.09, 0.12, 0.7, 6]} />
-            <meshStandardMaterial color="#8b5a2b" />
-          </mesh>
-          <mesh castShadow position={[0, 1.15, 0]}>
-            <coneGeometry args={[0.55, 1.1, 7]} />
-            <meshStandardMaterial color={COLORS.grassDark} />
-          </mesh>
+      {/* Trees: one instanced voxel mesh per tree, scaled for variety */}
+      {trees.map((t) => (
+        <group key={t.key} position={[t.x, 0, t.z]} scale={t.s}>
+          <InstancedVoxels voxels={treeVoxels(COLORS.grassDark)} />
         </group>
       ))}
 
       {/* Street lamps */}
-      {lamps.map((l, i) => (
-        <group key={i} position={[l.x, 0, l.z]}>
-          <mesh castShadow position={[0, 0.75, 0]}>
-            <cylinderGeometry args={[0.05, 0.06, 1.5, 6]} />
-            <meshStandardMaterial color="#5a5a5a" />
-          </mesh>
-          <mesh position={[0, 1.55, 0]}>
-            <sphereGeometry args={[0.09, 8, 8]} />
-            <meshStandardMaterial emissive="#ffd98a" color="#ffe9b3" />
-          </mesh>
+      {lamps.map((l) => (
+        <group key={l.key} position={[l.x, 0, l.z]}>
+          <InstancedVoxels voxels={lampVoxels()} />
         </group>
       ))}
     </group>

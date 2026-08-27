@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { PlacedBlock } from "../../layout";
-import { COLORS } from "../../theme";
+import { mountainVoxels } from "../../voxel";
+import { InstancedVoxels } from "./InstancedVoxels";
 
 function mulberry32(seed: number) {
   return () => {
@@ -18,7 +19,6 @@ interface MountainSpec {
   h: number;
   s: number;
   rot: number;
-  two: boolean;
 }
 
 export function Mountains({ blocks }: { blocks: PlacedBlock[] }) {
@@ -38,10 +38,9 @@ export function Mountains({ blocks }: { blocks: PlacedBlock[] }) {
       return {
         x: cx + Math.cos(a) * rr,
         z: cz + Math.sin(a) * rr,
-        h: 9 + rand() * 16,
+        h: Math.round(9 + rand() * 16),
         s: 0.8 + rand() * 0.9,
         rot: rand() * Math.PI * 2,
-        two: rand() < 0.5,
       };
     });
   }, [blocks]);
@@ -52,23 +51,7 @@ export function Mountains({ blocks }: { blocks: PlacedBlock[] }) {
     <group>
       {ring.map((m, i) => (
         <group key={i} position={[m.x, 0, m.z]} rotation={[0, m.rot, 0]} scale={m.s}>
-          {/* Main peak */}
-          <mesh castShadow position={[0, m.h / 2, 0]}>
-            <coneGeometry args={[m.h * 0.5, m.h, 6]} />
-            <meshStandardMaterial color={COLORS.mountain} flatShading />
-          </mesh>
-          {/* Snow cap */}
-          <mesh position={[0, m.h - m.h * 0.22, 0]}>
-            <coneGeometry args={[m.h * 0.13, m.h * 0.28, 6]} />
-            <meshStandardMaterial color={COLORS.snow} flatShading />
-          </mesh>
-          {/* Small satellite peak for some mountains */}
-          {m.two && (
-            <mesh castShadow position={[m.h * 0.42, m.h * 0.18, m.h * 0.1]}>
-              <coneGeometry args={[m.h * 0.3, m.h * 0.55, 6]} />
-              <meshStandardMaterial color={COLORS.mountain} flatShading />
-            </mesh>
-          )}
+          <InstancedVoxels voxels={mountainVoxels(m.h)} />
         </group>
       ))}
     </group>

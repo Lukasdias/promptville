@@ -1,17 +1,14 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { BoxGeometry, ConeGeometry, type Group } from "three";
+import type { Group } from "three";
 import { houseScale } from "../../layout";
 import { MODEL_ROOF, PROJECT_PALETTE, UNKNOWN_ROOF } from "../../theme";
+import { houseVoxels } from "../../voxel";
+import { InstancedVoxels } from "./InstancedVoxels";
 import { useApp } from "../../store";
 import type { SessionData } from "../../types";
 
-// Shared geometries — created once, reused by every house (see docs/r3f-reference.md §9/§10).
-const BODY_GEO = new BoxGeometry(1, 1, 1);
-const ROOF_GEO = new ConeGeometry(0.82, 0.55, 4);
-const DOOR_GEO = new BoxGeometry(0.18, 0.42, 0.04);
-const WINDOW_GEO = new BoxGeometry(0.16, 0.16, 0.04);
-const CHIMNEY_GEO = new BoxGeometry(0.12, 0.5, 0.12);
+const FOOTPRINT = 7; // house footprint in voxels
 
 export function House({
   session,
@@ -32,6 +29,16 @@ export function House({
   const bodyColor = useMemo(() => PROJECT_PALETTE[paletteIndex % PROJECT_PALETTE.length], [paletteIndex]);
   const roofColor = useMemo(() => (session.model ? MODEL_ROOF[session.model] ?? UNKNOWN_ROOF : UNKNOWN_ROOF), [session.model]);
   const height = useMemo(() => houseScale(session.tokensIn, session.tokensOut), [session.tokensIn, session.tokensOut]);
+  const walls = useMemo(() => Math.min(9, 3 + Math.round(height)), [height]);
+  const pitched = useMemo(() => session.id.charCodeAt(0) % 2 === 0, [session.id]);
+  const chimney = useMemo(() => session.id.charCodeAt(0) % 3 === 0, [session.id]);
+
+  const voxels = useMemo(
+    () => houseVoxels({ body: bodyColor, roof: roofColor, walls, pitched, chimney }),
+    [bodyColor, roofColor, walls, pitched, chimney],
+  );
+
+  const scale = useMemo(() => 0.72 / (FOOTPRINT * 0.96), []);
   const delay = useMemo(() => (session.id.charCodeAt(session.id.length - 1) % 30) / 60, [session.id]);
   const start = useRef<number | null>(null);
   const isSelected = selected?.id === session.id;
@@ -45,7 +52,7 @@ export function House({
     const smooth = eased * eased * (3 - 2 * eased);
     const base = smooth === 1 ? 1 : Math.max(0.001, smooth);
     const hover = hoverRef.current ? 1.08 : 1;
-    g.scale.setScalar(base * hover);
+    g.scale.setScalar(base * hover * scale);
     const bob = isSelected ? Math.sin(clock.elapsedTime * 2.2) * 0.06 : 0;
     g.position.y = bob;
   });
@@ -69,31 +76,7 @@ export function House({
         document.body.style.cursor = "auto";
       }}
     >
-      {/* Body */}
-      <mesh castShadow receiveShadow geometry={BODY_GEO} scale={[0.72, height, 0.72]} position={[0, height / 2, 0]}>
-        <meshStandardMaterial color={bodyColor} />
-      </mesh>
-      {/* Roof */}
-      <mesh castShadow geometry={ROOF_GEO} position={[0, height + 0.28, 0]} rotation={[0, Math.PI / 4, 0]} scale={[1.15, 1, 1.15]}>
-        <meshStandardMaterial color={roofColor} />
-      </mesh>
-      {/* Door */}
-      <mesh geometry={DOOR_GEO} position={[0, 0.28, 0.361]}>
-        <meshStandardMaterial color="#7a5230" />
-      </mesh>
-      {/* Windows */}
-      <mesh geometry={WINDOW_GEO} position={[0.26, 0.78, 0.361]}>
-        <meshStandardMaterial color="#aee6ff" />
-      </mesh>
-      <mesh geometry={WINDOW_GEO} position={[-0.26, 0.78, 0.361]}>
-        <meshStandardMaterial color="#aee6ff" />
-      </mesh>
-      {/* Chimney on some houses */}
-      {session.id.charCodeAt(0) % 3 === 0 && (
-        <mesh geometry={CHIMNEY_GEO} position={[0.2, height + 0.28, 0.1]}>
-          <meshStandardMaterial color="#c96f6f" />
-        </mesh>
-      )}
+      <InstancedVoxels voxels={voxels} />
     </group>
   );
 }

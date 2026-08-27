@@ -28,8 +28,9 @@ Key files:
   - Hooks (`useThree`, `useFrame`, `useLoader`) only inside `<Canvas>`.
   - Never `setState` in `useFrame` - mutate refs directly, use `delta`.
   - Share geometries/materials via module-level constants (`House.tsx`).
-  - `frameloop="always"` on Canvas (the town has continuous animation: drifting clouds, hover, bob). Do not switch to `demand` — clouds would freeze.
-  - Ground planes must be rotated `rotation-x={-Math.PI/2}` (they default to +Z-facing).
+- `frameloop="always"` on Canvas (the town has continuous animation: drifting clouds, hover, bob). Do not switch to `demand` — clouds would freeze.
+- Ground planes must be rotated `rotation-x={-Math.PI/2}` (they default to +Z-facing).
+- All scene props are **voxel-based** (`app/src/voxel.ts` blueprints + `InstancedVoxels`): one `InstancedMesh` of unit cubes per object, per-instance color for tinting. Never hand-build houses/trees/mountains from many `<mesh>` elements — that was ~2300 draw calls.
 - Server reads the opencode DB **read-only** - never mutate it.
 - All UI copy in English, title "Promptville". Fonts Fredoka + Nunito only.
 
