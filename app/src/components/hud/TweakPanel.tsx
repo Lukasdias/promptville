@@ -85,6 +85,7 @@ export function TweakPanel() {
             <Toggle label="Traffic" value={t.showTraffic} onChange={(v) => setTweak("showTraffic", v)} />
             <Toggle label="Scenery" value={t.showScenery} onChange={(v) => setTweak("showScenery", v)} />
             <Toggle label="Mountains" value={t.showMountains} onChange={(v) => setTweak("showMountains", v)} />
+            <Toggle label="Public buildings" value={t.showBuildings} onChange={(v) => setTweak("showBuildings", v)} />
           </Group>
           <button
             type="button"

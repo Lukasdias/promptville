@@ -6,6 +6,7 @@ import {
   HOUSE_SPACING,
   HOUSE_PAD,
   ROAD_WIDTH,
+  CIVIC_PLAZA,
 } from "./layout";
 
 const projects = [
@@ -106,6 +107,39 @@ describe("buildStreets", () => {
       expect(s.z - s.depth / 2).toBeGreaterThanOrEqual(minZ);
       expect(s.z + s.depth / 2).toBeLessThanOrEqual(maxZ);
     }
+  });
+});
+
+describe("layoutCity with plaza", () => {
+  const nineProjects = Array.from({ length: 9 }, (_, i) => ({
+    id: `p${i}`,
+    name: `P${i}`,
+    sessions: Array.from({ length: 5 }, () => ({ tokensIn: 10, tokensOut: 5 })),
+  }));
+  const blocks = layoutCity(nineProjects, { plaza: CIVIC_PLAZA });
+
+  test("adds a plaza block in the middle of the grid", () => {
+    const plaza = blocks.find((b) => b.projectId === "__plaza__");
+    expect(plaza).toBeDefined();
+    expect(plaza!.kind).toBe("plaza");
+    expect(plaza!.houses).toHaveLength(0);
+  });
+
+  test("keeps every project block in original order", () => {
+    const projectsOnly = blocks.filter((b) => b.kind !== "plaza");
+    expect(projectsOnly.map((b) => b.projectId)).toEqual(Array.from({ length: 9 }, (_, i) => `p${i}`));
+  });
+
+  test("plaza sits between the first and last block rows", () => {
+    const plaza = blocks.find((b) => b.projectId === "__plaza__")!;
+    const firstRowZ = Math.min(...blocks.slice(0, 4).map((b) => b.z));
+    const lastRowZ = Math.max(...blocks.map((b) => b.z));
+    expect(plaza.z).toBeGreaterThan(firstRowZ);
+    expect(plaza.z).toBeLessThan(lastRowZ);
+  });
+
+  test("non-plaza blocks default to kind block", () => {
+    expect(blocks.every((b) => b.kind === "plaza" || b.kind === undefined || b.kind === "block")).toBe(true);
   });
 });
 

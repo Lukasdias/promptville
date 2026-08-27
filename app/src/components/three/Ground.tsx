@@ -90,19 +90,35 @@ export function Ground({
         </mesh>
       ))}
 
-      {/* Grass lot under each block */}
-      {blocks.map((b) => (
-        <mesh
-          key={b.projectId}
-          position={[b.x, -0.04, b.z]}
-          rotation-x={-Math.PI / 2}
-          receiveShadow
-          onClick={clear}
-        >
-          <planeGeometry args={[b.width + 0.4, b.depth + 0.4]} />
-          <meshStandardMaterial color={COLORS.grassLot} />
-        </mesh>
-      ))}
+      {/* Grass lot under each block; the plaza cell renders as a cream pad with a water center */}
+      {blocks.map((b) => {
+        if (b.kind === "plaza") {
+          return (
+            <group key={b.projectId}>
+              <mesh position={[b.x, -0.039, b.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear}>
+                <planeGeometry args={[b.width + 0.4, b.depth + 0.4]} />
+                <meshStandardMaterial color="#f7efe0" />
+              </mesh>
+              <mesh position={[b.x, -0.038, b.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear}>
+                <circleGeometry args={[3, 24]} />
+                <meshStandardMaterial color="#7fc9ff" />
+              </mesh>
+            </group>
+          );
+        }
+        return (
+          <mesh
+            key={b.projectId}
+            position={[b.x, -0.04, b.z]}
+            rotation-x={-Math.PI / 2}
+            receiveShadow
+            onClick={clear}
+          >
+            <planeGeometry args={[b.width + 0.4, b.depth + 0.4]} />
+            <meshStandardMaterial color={COLORS.grassLot} />
+          </mesh>
+        );
+      })}
 
       {/* Park in a free corner */}
       {park && (

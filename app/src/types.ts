@@ -32,3 +32,5 @@ export interface Neighborhood {
   stats: Stats;
   projects: ProjectData[];
 }
+
+export type BuildingKind = "hospital" | "police" | "fire" | "mall" | "bakery" | "petshop";

@@ -1,8 +1,121 @@
+import type { BuildingKind } from "./types";
+
 export interface Voxel {
   x: number;
   y: number;
   z: number;
   color: string;
+}
+
+export const CROSS_RED = "#ff5252";
+export const SIREN_BLUE = "#3a7bd5";
+export const GARAGE_DARK = "#222222";
+export const BELL_YELLOW = "#ffd24a";
+export const AWNING_COLORS = ["#ff8fa3", "#ffd166", "#7fb6ff", "#b0f2b4"];
+export const BREAD_TAN = "#d99b58";
+export const BREAD_BROWN = "#b8722f";
+
+export interface PublicBuildingOptions {
+  kind: BuildingKind;
+  body: string;
+  accent: string;
+  roof: string;
+  walls: number;
+  width?: number;
+  depth?: number;
+}
+
+// Generic civic building: hollow walls + roof slab, then a per-kind signature
+// mark. Follows the voxel-forms skill (footprint → walls → roof → marks).
+export function publicBuildingVoxels(o: PublicBuildingOptions): Voxel[] {
+  const W = o.width ?? 7;
+  const D = o.depth ?? 7;
+  const hw = Math.floor(W / 2);
+  const hd = Math.floor(D / 2);
+  const voxels: Voxel[] = [];
+  const push = (x: number, y: number, z: number, color: string) => voxels.push({ x, y, z, color });
+
+  for (let x = -hw; x <= hw; x++) {
+    for (let z = -hd; z <= hd; z++) {
+      if (Math.abs(x) === hw || Math.abs(z) === hd) {
+        for (let y = 0; y < o.walls; y++) push(x, y, z, o.body);
+      }
+    }
+  }
+
+  for (let x = -hw; x <= hw; x++) {
+    for (let z = -hd; z <= hd; z++) push(x, o.walls, z, o.roof);
+  }
+
+  if (o.walls >= 3) {
+    for (let x = -hw; x <= hw; x++) {
+      for (let z = -hd; z <= hd; z++) {
+        if (Math.abs(x) === hw || Math.abs(z) === hd) push(x, 2, z, o.accent);
+      }
+    }
+  }
+
+  if (o.walls >= 2) {
+    push(0, 0, hd, o.accent);
+    push(0, 1, hd, o.accent);
+  }
+  if (o.walls >= 4) {
+    push(-2, 3, hd, WINDOW_COLOR);
+    push(2, 3, hd, WINDOW_COLOR);
+  } else if (o.walls >= 3) {
+    push(-2, 1, hd, WINDOW_COLOR);
+    push(2, 1, hd, WINDOW_COLOR);
+  }
+
+  switch (o.kind) {
+    case "hospital": {
+      push(0, o.walls + 1, 0, CROSS_RED);
+      push(-1, o.walls + 1, 0, CROSS_RED);
+      push(1, o.walls + 1, 0, CROSS_RED);
+      push(0, o.walls + 1, -1, CROSS_RED);
+      push(0, o.walls + 1, 1, CROSS_RED);
+      break;
+    }
+    case "police": {
+      push(0, o.walls + 1, 0, SIREN_BLUE);
+      push(0, o.walls + 2, 0, CROSS_RED);
+      break;
+    }
+    case "fire": {
+      push(-2, 0, hd, GARAGE_DARK);
+      push(-2, 1, hd, GARAGE_DARK);
+      push(2, 0, hd, GARAGE_DARK);
+      push(2, 1, hd, GARAGE_DARK);
+      for (let y = o.walls + 1; y <= o.walls + 3; y++) push(-hw + 1, y, 0, o.accent);
+      push(-hw + 1, o.walls + 4, 0, BELL_YELLOW);
+      break;
+    }
+    case "mall": {
+      for (let x = -hw; x <= hw; x++) push(x, 1, hd, AWNING_COLORS[(x + hw + 4) % AWNING_COLORS.length]);
+      for (let x = -2; x <= 2; x++) {
+        push(x, o.walls + 1, 0, BELL_YELLOW);
+        push(x, o.walls + 2, 0, CROSS_RED);
+      }
+      break;
+    }
+    case "bakery": {
+      push(-1, o.walls + 1, 0, BREAD_BROWN);
+      push(0, o.walls + 1, 0, BREAD_BROWN);
+      push(1, o.walls + 1, 0, BREAD_BROWN);
+      push(0, o.walls + 2, 0, BREAD_BROWN);
+      for (let x = -hw; x <= hw; x++) push(x, 2, hd, BREAD_TAN);
+      break;
+    }
+    case "petshop": {
+      push(0, 2, hd, o.accent);
+      push(-1, 2, hd, o.accent);
+      push(1, 2, hd, o.accent);
+      push(0, 3, hd, o.accent);
+      break;
+    }
+  }
+
+  return voxels;
 }
 
 export const DOOR_COLOR = "#7a5230";

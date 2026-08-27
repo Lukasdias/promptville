@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { SessionData } from "./types";
+import type { SessionData, BuildingKind } from "./types";
+import type { BuildingActivity } from "./activity";
 
 export interface StatsRows {
   cost: boolean;
@@ -22,6 +23,7 @@ export interface Tweaks {
   showTraffic: boolean;
   showScenery: boolean;
   showMountains: boolean;
+  showBuildings: boolean;
 }
 
 export const DEFAULT_TWEAKS: Tweaks = {
@@ -42,12 +44,16 @@ export const DEFAULT_TWEAKS: Tweaks = {
   showTraffic: true,
   showScenery: true,
   showMountains: true,
+  showBuildings: true,
 };
 
 interface AppState {
   selected: SessionData | null;
   select: (session: SessionData | null) => void;
+  selectedBuilding: BuildingKind | null;
+  selectBuilding: (building: BuildingKind | null) => void;
   clearSelection: () => void;
+  activity: BuildingActivity;
   helpOpen: boolean;
   toggleHelp: () => void;
   tweaksOpen: boolean;
@@ -63,7 +69,17 @@ export const useApp = create<AppState>()(
     (set) => ({
       selected: null,
       select: (session) => set({ selected: session }),
-      clearSelection: () => set({ selected: null }),
+      selectedBuilding: null,
+      selectBuilding: (building) => set({ selectedBuilding: building }),
+      clearSelection: () => set({ selected: null, selectedBuilding: null }),
+      activity: {
+        hospital: { visitors: 0, cars: 0 },
+        police: { visitors: 0, cars: 0 },
+        fire: { visitors: 0, cars: 0 },
+        mall: { visitors: 0, cars: 0 },
+        bakery: { visitors: 0, cars: 0 },
+        petshop: { visitors: 0, cars: 0 },
+      },
       helpOpen: false,
       toggleHelp: () => set((s) => ({ helpOpen: !s.helpOpen })),
       tweaksOpen: false,

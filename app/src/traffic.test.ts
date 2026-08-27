@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { layoutCity, buildStreets } from "./layout";
-import { TrafficController, findIntersections } from "./traffic";
+import { TrafficController, findIntersections, pickDestination } from "./traffic";
 
 const projects = [
   { id: "a", name: "A", sessions: Array.from({ length: 8 }, () => ({ tokensIn: 10, tokensOut: 5 })) },
@@ -81,5 +81,26 @@ describe("TrafficController", () => {
     // id 1: z→(5)y→(6.5)x→(16.5)y→(18)z, next 23 → z green → avenue red
     expect(controller.greenFor(1, "z")).toBe(true);
     expect(controller.signalColorFor(1)).toBe("red");
+  });
+});
+
+describe("pickDestination", () => {
+  test("prefers a curb node when the roll is below 0.6", () => {
+    const curbs = [10, 20, 30];
+    let calls = 0;
+    const rand = () => (++calls === 1 ? 0.3 : 0.5);
+    const d = pickDestination(curbs, 100, rand);
+    expect(curbs).toContain(d);
+  });
+
+  test("falls back to a random node when the roll is >= 0.6", () => {
+    const d = pickDestination([10], 100, () => 0.9);
+    expect(d).not.toBe(10);
+    expect(d).toBeGreaterThanOrEqual(0);
+    expect(d).toBeLessThan(100);
+  });
+
+  test("returns a random node when no curbs exist", () => {
+    expect(pickDestination([], 50, () => 0.1)).toBeGreaterThanOrEqual(0);
   });
 });

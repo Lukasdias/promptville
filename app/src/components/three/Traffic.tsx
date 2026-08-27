@@ -5,8 +5,12 @@ import type { Street } from "../../layout";
 import { traffic } from "../../config";
 import { useApp } from "../../store";
 import type { Intersection, TrafficController } from "../../traffic";
-import { planRoute, type RoadGraph } from "../../roadgraph";
+import { pickDestination } from "../../traffic";
+import { planRoute, type RoadGraph, type Curb } from "../../roadgraph";
 import { carVoxels, personVoxels, type Voxel } from "../../voxel";
+import type { VisitorPath } from "../../civic";
+import type { BuildingKind } from "../../types";
+import { bumpBuildingActivity } from "../../activity";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { TrafficLights } from "./TrafficLights";
 
@@ -247,10 +251,12 @@ function WaypointCar({
   car,
   graph,
   controller,
+  curbs,
 }: {
   car: CarSpec;
   graph: RoadGraph;
   controller: TrafficController;
+  curbs: Curb[];
 }) {
   const ref = useRef<Group>(null);
   const heading = useRef({ x: 1, z: 0 });
@@ -261,17 +267,33 @@ function WaypointCar({
   const t = useRef(0);
   const speed = useRef(0);
 
+  const curbByNode = useMemo(() => new Map(curbs.map((c) => [c.nodeId, c])), [curbs]);
+  const curbNodeIds = useMemo(() => curbs.map((c) => c.nodeId), [curbs]);
+  const dropOff = useRef(0);
+  const dropOffCurb = useRef<Curb | null>(null);
+
   const voxels = useMemo(() => carVoxels(car.color), [car.color]);
 
   useFrame((_, delta) => {
     const g = ref.current;
     if (!g) return;
 
+    // Drop-off idle at a building curb: sit still, then leave.
+    if (dropOff.current > 0) {
+      dropOff.current -= delta;
+      speed.current = 0;
+      if (dropOff.current <= 0) {
+        if (dropOffCurb.current) bumpBuildingActivity(dropOffCurb.current.buildingId, "cars", -1);
+        dropOffCurb.current = null;
+        route.current = [];
+      }
+      return;
+    }
+
     // Replan when we arrive at the end of the current route.
     if (route.current.length === 0 || routeIdx.current >= route.current.length) {
       const from = route.current.length > 0 ? route.current[route.current.length - 1] : Math.floor(Math.random() * graph.nodes.length);
-      let goal = Math.floor(Math.random() * graph.nodes.length);
-      while (goal === from) goal = Math.floor(Math.random() * graph.nodes.length);
+      const goal = pickDestination(curbNodeIds, graph.nodes.length, Math.random);
       route.current = planRoute(graph, from, goal);
       routeIdx.current = 1;
       t.current = 0;
@@ -298,6 +320,15 @@ function WaypointCar({
     if (t.current >= 1) {
       routeIdx.current += 1;
       t.current -= 1;
+      if (routeIdx.current >= route.current.length) {
+        const lastId = route.current[route.current.length - 1];
+        const curb = curbByNode.get(lastId);
+        if (curb) {
+          dropOff.current = 2 + Math.random() * 2;
+          dropOffCurb.current = curb;
+          bumpBuildingActivity(curb.buildingId, "cars", 1);
+        }
+      }
     }
     speed.current = v;
 
@@ -373,30 +404,146 @@ function FootMover({ spec }: { spec: TrafficSpec }) {
   );
 }
 
+const VISIT_LINGER = 3.5;
+
+interface VisitorSpec {
+  path: VisitorPath;
+  building: BuildingKind;
+  color: string;
+  speed: number;
+}
+
+function segLen(points: { x: number; z: number }[], i: number): number {
+  const a = points[Math.max(0, Math.min(points.length - 1, i))];
+  const b = points[Math.max(0, Math.min(points.length - 1, i + 1))];
+  return Math.hypot(b.x - a.x, b.z - a.z) || 1;
+}
+
+// A person walking a VisitorPath: start → sidewalk → entrance, lingers at the
+// entrance, then walks back and despawns (same fade lifecycle as foot traffic).
+function VisitorMover({ spec }: { spec: VisitorSpec }) {
+  const ref = useRef<Group>(null);
+  const points = useMemo<{ x: number; z: number }[]>(
+    () => [spec.path.from, ...spec.path.waypoints],
+    [spec.path],
+  );
+  const seg = useRef(0);
+  const t = useRef(0);
+  const linger = useRef(0);
+  const reverse = useRef(false);
+  const state = useRef<MoverState>("drive");
+  const stateT = useRef(0);
+  const respawnIn = useRef(0);
+  const entered = useRef(false);
+
+  const voxels = useMemo(() => personVoxels(spec.color), [spec.color]);
+
+  useFrame((_, delta) => {
+    const g = ref.current;
+    if (!g) return;
+    const { scale, driving } = stepLifecycle(state, stateT, respawnIn, delta);
+
+    if (driving) {
+      if (reverse.current) {
+        t.current -= (spec.speed * delta) / segLen(points, seg.current);
+        if (t.current <= 0) {
+          seg.current -= 1;
+          t.current = 1;
+          if (seg.current < 0) {
+            state.current = "fadeOut";
+            stateT.current = 0;
+            seg.current = 0;
+            t.current = 0;
+            reverse.current = false;
+          }
+        }
+      } else if (linger.current > 0) {
+        linger.current -= delta;
+        if (linger.current <= 0) {
+          reverse.current = true;
+          bumpBuildingActivity(spec.building, "visitors", -1);
+        }
+      } else {
+        t.current += (spec.speed * delta) / segLen(points, seg.current);
+        if (t.current >= 1) {
+          seg.current += 1;
+          t.current -= 1;
+          if (seg.current >= points.length - 1) {
+            seg.current = points.length - 1;
+            t.current = 1;
+            if (!entered.current) {
+              entered.current = true;
+              bumpBuildingActivity(spec.building, "visitors", 1);
+            }
+            linger.current = VISIT_LINGER + Math.random();
+          }
+        }
+      }
+    }
+
+    const a = points[Math.max(0, Math.min(points.length - 1, seg.current))];
+    const b = points[Math.max(0, Math.min(points.length - 1, seg.current + (reverse.current ? -1 : 1)))];
+    if (!a) return;
+    const nx = (b?.x ?? a.x) - a.x;
+    const nz = (b?.z ?? a.z) - a.z;
+    const cx = a.x + nx * t.current;
+    const cz = a.z + nz * t.current;
+    g.position.set(cx, 0, cz);
+    g.rotation.y = Math.atan2(nz, nx);
+    g.scale.setScalar(scale);
+  });
+
+  return (
+    <group ref={ref}>
+      <InstancedVoxels voxels={voxels} voxelSize={0.15} />
+    </group>
+  );
+}
+
 export function Traffic({
   streets,
   intersections,
   controller,
   graph,
+  curbs = [],
+  visitorPaths = [],
+  visitorBuildings = [],
 }: {
   streets: Street[];
   intersections: Intersection[];
   controller: TrafficController;
   graph: RoadGraph;
+  curbs?: Curb[];
+  visitorPaths?: VisitorPath[];
+  visitorBuildings?: BuildingKind[];
 }) {
   const specs = useTrafficSpecs(streets);
   const showTraffic = useApp((s) => s.tweaks.showTraffic);
   if (!showTraffic) return null;
   const cars = useCarSpecs();
+  const visitorSpecs = useMemo(() => {
+    if (visitorPaths.length === 0) return [];
+    const rand = mulberry32(999);
+    const colors = ["#ffb3ba", "#bae1ff", "#baffc9", "#ffffba", "#d4baff", "#ffd1dc"];
+    return Array.from({ length: traffic.visitors }, (_, i) => ({
+      path: visitorPaths[i % visitorPaths.length],
+      building: visitorBuildings[i % visitorBuildings.length],
+      color: colors[i % colors.length],
+      speed: 0.8 + rand() * 0.5,
+    }));
+  }, [visitorPaths, visitorBuildings]);
 
   return (
     <group>
       <TrafficLights controller={controller} intersections={intersections} streets={streets} />
       {cars.map((car, i) => (
-        <WaypointCar key={i} car={car} graph={graph} controller={controller} />
+        <WaypointCar key={i} car={car} graph={graph} controller={controller} curbs={curbs} />
       ))}
       {specs.map((spec, i) => (
         <FootMover key={`f${i}`} spec={spec} />
+      ))}
+      {visitorSpecs.map((spec, i) => (
+        <VisitorMover key={`v${i}`} spec={spec} />
       ))}
     </group>
   );

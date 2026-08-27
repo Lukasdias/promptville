@@ -12,12 +12,19 @@ export interface PlacedBlock {
   width: number;
   depth: number;
   houses: HouseSlot[];
+  kind?: "block" | "plaza";
 }
 
 export const HOUSE_SPACING = 1.7;
 export const HOUSE_PAD = 0.6;
 export const ROAD_WIDTH = 3.5;
 export const BLOCKS_PER_ROW = 4;
+
+export interface LayoutOpts {
+  plaza?: { width: number; depth: number };
+}
+
+export const CIVIC_PLAZA = { width: 20, depth: 14 };
 
 export interface Street {
   x: number;
@@ -37,49 +44,88 @@ interface InputProject {
   sessions: { tokensIn: number; tokensOut: number }[];
 }
 
-export function layoutCity(projects: InputProject[]): PlacedBlock[] {
+export function layoutCity(projects: InputProject[], opts?: LayoutOpts): PlacedBlock[] {
   const blocks: PlacedBlock[] = [];
+  if (projects.length === 0) return blocks;
+
+  const plaza = opts?.plaza;
+  const rows = Math.ceil(projects.length / BLOCKS_PER_ROW);
+  const plazaRow = plaza ? Math.floor(rows / 2) : -1;
+
+  type Cell = { kind: "project"; i: number } | { kind: "plaza" };
+  const cellRows: Cell[][] = [];
+  for (let r = 0; r < rows; r++) {
+    const cellRow: Cell[] = [];
+    for (let c = 0; c < BLOCKS_PER_ROW; c++) {
+      const i = r * BLOCKS_PER_ROW + c;
+      if (i >= projects.length) break;
+      cellRow.push({ kind: "project", i });
+    }
+    if (r === plazaRow) cellRow.splice(Math.min(1, cellRow.length), 0, { kind: "plaza" });
+    cellRows.push(cellRow);
+  }
+  // Reflow rows that exceed BLOCKS_PER_ROW slots.
+  for (let r = 0; r < cellRows.length; r++) {
+    const row = cellRows[r];
+    while (row.length > BLOCKS_PER_ROW) {
+      const overflow = row.pop()!;
+      if (r + 1 < cellRows.length) cellRows[r + 1].unshift(overflow);
+      else cellRows.push([overflow]);
+    }
+  }
+
   let x = 0;
   let z = 0;
   let rowDepth = 0;
-
-  for (const project of projects) {
-    const count = project.sessions.length;
-    const cols = Math.max(1, Math.ceil(Math.sqrt(count)));
-    const rows = Math.max(1, Math.ceil(count / cols));
-    const width = cols * HOUSE_SPACING + HOUSE_PAD * 2;
-    const depth = rows * HOUSE_SPACING + HOUSE_PAD * 2;
-
-    const block: PlacedBlock = {
-      projectId: project.id,
-      name: project.name,
-      x,
-      z,
-      width,
-      depth,
-      houses: [],
-    };
-
-    for (let i = 0; i < count; i++) {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      block.houses.push({
-        x: x - width / 2 + HOUSE_PAD + HOUSE_SPACING / 2 + col * HOUSE_SPACING,
-        z: z - depth / 2 + HOUSE_PAD + HOUSE_SPACING / 2 + row * HOUSE_SPACING,
-        index: i,
-      });
+  for (const row of cellRows) {
+    for (const cell of row) {
+      if (cell.kind === "plaza") {
+        const block: PlacedBlock = {
+          projectId: "__plaza__",
+          name: "Civic Plaza",
+          x,
+          z,
+          width: plaza!.width,
+          depth: plaza!.depth,
+          houses: [],
+          kind: "plaza",
+        };
+        blocks.push(block);
+        x += plaza!.width + ROAD_WIDTH;
+        rowDepth = Math.max(rowDepth, plaza!.depth);
+        continue;
+      }
+      const project = projects[cell.i];
+      const count = project.sessions.length;
+      const cols = Math.max(1, Math.ceil(Math.sqrt(count)));
+      const blockRows = Math.max(1, Math.ceil(count / cols));
+      const width = cols * HOUSE_SPACING + HOUSE_PAD * 2;
+      const depth = blockRows * HOUSE_SPACING + HOUSE_PAD * 2;
+      const block: PlacedBlock = {
+        projectId: project.id,
+        name: project.name,
+        x,
+        z,
+        width,
+        depth,
+        houses: [],
+      };
+      for (let i = 0; i < count; i++) {
+        const col = i % cols;
+        const rw = Math.floor(i / cols);
+        block.houses.push({
+          x: x - width / 2 + HOUSE_PAD + HOUSE_SPACING / 2 + col * HOUSE_SPACING,
+          z: z - depth / 2 + HOUSE_PAD + HOUSE_SPACING / 2 + rw * HOUSE_SPACING,
+          index: i,
+        });
+      }
+      blocks.push(block);
+      x += width + ROAD_WIDTH;
+      rowDepth = Math.max(rowDepth, depth);
     }
-
-    blocks.push(block);
-
-    x += width + ROAD_WIDTH;
-    rowDepth = Math.max(rowDepth, depth);
-
-    if (blocks.length % BLOCKS_PER_ROW === 0) {
-      x = 0;
-      z += rowDepth + ROAD_WIDTH;
-      rowDepth = 0;
-    }
+    x = 0;
+    z += rowDepth + ROAD_WIDTH;
+    rowDepth = 0;
   }
 
   return blocks;

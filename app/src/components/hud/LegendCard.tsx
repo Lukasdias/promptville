@@ -1,5 +1,6 @@
 import { animated, useSpring } from "@react-spring/web";
-import { MODEL_ROOF, UNKNOWN_ROOF } from "../../theme";
+import { MODEL_ROOF, UNKNOWN_ROOF, BUILDING_COLORS } from "../../theme";
+import { BUILDING_META } from "../../civic";
 import { useApp } from "../../store";
 
 export function LegendCard() {
@@ -31,6 +32,22 @@ export function LegendCard() {
             <span>other</span>
           </li>
         </ul>
+        <div className="mt-3 border-t border-ink/10 pt-2">
+          <h4 className="font-display text-xs font-semibold">Civic buildings</h4>
+          <ul className="mt-1 space-y-1 text-xs">
+            {Object.entries(BUILDING_META).map(([kind, meta]) => (
+              <li key={kind} className="flex items-center gap-2">
+                <span
+                  className="h-3 w-3 shrink-0 rounded-full border border-ink/30"
+                  style={{ background: BUILDING_COLORS[kind as keyof typeof BUILDING_COLORS].body }}
+                />
+                <span className="truncate">
+                  {meta.emoji} {meta.name}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </animated.div>
   );

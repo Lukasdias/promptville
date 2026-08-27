@@ -1,3 +1,5 @@
+import type { BuildingKind } from "./types";
+
 export const PROJECT_PALETTE = [
   "#ffb3ba", "#ffdfba", "#ffffba", "#baffc9",
   "#bae1ff", "#d4baff", "#ffd1dc", "#c9f2ff",
@@ -27,4 +29,13 @@ export const COLORS = {
   ink: "#4a4453",
   mountain: "#8a9b6e",
   snow: "#f4f1e6",
+};
+
+export const BUILDING_COLORS: Record<BuildingKind, { body: string; accent: string; roof: string }> = {
+  hospital: { body: "#ffffff", accent: "#ff5252", roof: "#eef2f5" },
+  police: { body: "#7fb6ff", accent: "#f7f3e8", roof: "#5a8fd4" },
+  fire: { body: "#ff6b6b", accent: "#f7f3e8", roof: "#d9534f" },
+  mall: { body: "#ffb3ba", accent: "#ffd166", roof: "#f3e3c0" },
+  bakery: { body: "#f3d9b1", accent: "#b8722f", roof: "#e8c79a" },
+  petshop: { body: "#ffc9de", accent: "#4fd1c5", roof: "#f0c4ff" },
 };

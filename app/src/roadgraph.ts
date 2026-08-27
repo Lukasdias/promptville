@@ -1,5 +1,6 @@
 import type { Street } from "./layout";
 import type { Intersection } from "./traffic";
+import type { BuildingKind } from "./types";
 
 export interface GraphNode {
   id: number;
@@ -133,4 +134,53 @@ export function planRoute(graph: RoadGraph, start: number, goal: number): number
     path.unshift(cur);
   }
   return path;
+}
+
+export interface Curb {
+  buildingId: BuildingKind;
+  nodeId: number;
+  x: number;
+  z: number;
+}
+
+// Adds one destination node per point with a bidirectional spur edge to the
+// nearest existing road node, so cars can route to the building's curb.
+export function attachCurbs(
+  graph: RoadGraph,
+  points: { buildingId: BuildingKind; x: number; z: number }[],
+): { graph: RoadGraph; curbs: Curb[] } {
+  const nodes = [...graph.nodes];
+  const edges = [...graph.edges];
+  const adjacency = graph.adjacency.map((row) => [...row]);
+  const curbs: Curb[] = [];
+
+  for (const p of points) {
+    let nearest = -1;
+    let best = Infinity;
+    for (let i = 0; i < nodes.length; i++) {
+      const d = (nodes[i].x - p.x) ** 2 + (nodes[i].z - p.z) ** 2;
+      if (d < best) {
+        best = d;
+        nearest = i;
+      }
+    }
+    const len = Math.sqrt(best);
+    if (len < 0.01) {
+      curbs.push({ buildingId: p.buildingId, nodeId: nearest, x: p.x, z: p.z });
+      continue;
+    }
+    const id = nodes.length;
+    nodes.push({ id, x: p.x, z: p.z, intersectionId: null });
+    adjacency.push([]);
+    const axis: "x" | "z" = Math.abs(nodes[nearest].x - p.x) >= Math.abs(nodes[nearest].z - p.z) ? "x" : "z";
+    const eidA = edges.length;
+    edges.push({ id: eidA, from: nearest, to: id, length: len, axis });
+    adjacency[nearest].push(eidA);
+    const eidB = edges.length;
+    edges.push({ id: eidB, from: id, to: nearest, length: len, axis });
+    adjacency[id].push(eidB);
+    curbs.push({ buildingId: p.buildingId, nodeId: id, x: p.x, z: p.z });
+  }
+
+  return { graph: { nodes, edges, adjacency }, curbs };
 }

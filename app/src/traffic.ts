@@ -99,3 +99,15 @@ export class TrafficController {
     return this.axis[id] === "x" ? "yellow" : "red";
   }
 }
+
+// Choose a destination node for a car: ~60% a building curb, else any road node.
+export function pickDestination(
+  curbNodeIds: number[],
+  totalNodes: number,
+  rand: () => number,
+): number {
+  if (curbNodeIds.length > 0 && rand() < 0.6) {
+    return curbNodeIds[Math.floor(rand() * curbNodeIds.length)];
+  }
+  return Math.floor(rand() * totalNodes);
+}

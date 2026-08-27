@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { BUILDING_COLORS } from "./theme";
+import { BUILDING_LAYOUT } from "./civic";
 import {
   houseVoxels,
   treeVoxels,
@@ -16,6 +18,12 @@ import {
   hydrantVoxels,
   coneVoxels,
   trafficLightVoxels,
+  publicBuildingVoxels,
+  CROSS_RED,
+  SIREN_BLUE,
+  GARAGE_DARK,
+  AWNING_COLORS,
+  BREAD_BROWN,
   DOOR_COLOR,
   WINDOW_COLOR,
   CHIMNEY_COLOR,
@@ -204,5 +212,68 @@ describe("environmental blueprints", () => {
     expect(voxels[3]).toEqual({ x: 0, y: 3, z: 0, color: "#3ddc64" });
     expect(voxels[4]).toEqual({ x: 0, y: 4, z: 0, color: "#ffd24a" });
     expect(voxels[5]).toEqual({ x: 0, y: 5, z: 0, color: "#ff5252" });
+  });
+});
+
+describe("publicBuildingVoxels", () => {
+  const kinds = Object.keys(BUILDING_LAYOUT) as (keyof typeof BUILDING_LAYOUT)[];
+
+  test("each building stays within its footprint and above ground", () => {
+    for (const kind of kinds) {
+      const { footprint, walls } = BUILDING_LAYOUT[kind];
+      const c = BUILDING_COLORS[kind];
+      const voxels = publicBuildingVoxels({ kind, body: c.body, accent: c.accent, roof: c.roof, walls, width: footprint, depth: footprint });
+      const hw = Math.floor(footprint / 2);
+      expect(voxels.length).toBeGreaterThan(0);
+      for (const v of voxels) {
+        expect(Math.abs(v.x)).toBeLessThanOrEqual(hw);
+        expect(Math.abs(v.z)).toBeLessThanOrEqual(hw);
+        expect(v.y).toBeGreaterThanOrEqual(0);
+      }
+    }
+  });
+
+  test("hospital has a red cross on the roof", () => {
+    const c = BUILDING_COLORS.hospital;
+    const { footprint, walls } = BUILDING_LAYOUT.hospital;
+    const voxels = publicBuildingVoxels({ kind: "hospital", body: c.body, accent: c.accent, roof: c.roof, walls, width: footprint, depth: footprint });
+    expect(voxels.some((v) => v.color === CROSS_RED && v.y > walls)).toBe(true);
+  });
+
+  test("police has a blue siren on the roof", () => {
+    const c = BUILDING_COLORS.police;
+    const { footprint, walls } = BUILDING_LAYOUT.police;
+    const voxels = publicBuildingVoxels({ kind: "police", body: c.body, accent: c.accent, roof: c.roof, walls, width: footprint, depth: footprint });
+    expect(voxels.some((v) => v.color === SIREN_BLUE && v.y > walls)).toBe(true);
+  });
+
+  test("fire station has dark garage bays and a tower", () => {
+    const c = BUILDING_COLORS.fire;
+    const { footprint, walls } = BUILDING_LAYOUT.fire;
+    const voxels = publicBuildingVoxels({ kind: "fire", body: c.body, accent: c.accent, roof: c.roof, walls, width: footprint, depth: footprint });
+    expect(voxels.filter((v) => v.color === GARAGE_DARK).length).toBeGreaterThanOrEqual(4);
+    const hw = Math.floor(footprint / 2);
+    expect(voxels.some((v) => v.x === -hw + 1 && v.y >= walls + 1)).toBe(true);
+  });
+
+  test("mall has awning stripes", () => {
+    const c = BUILDING_COLORS.mall;
+    const { footprint, walls } = BUILDING_LAYOUT.mall;
+    const voxels = publicBuildingVoxels({ kind: "mall", body: c.body, accent: c.accent, roof: c.roof, walls, width: footprint, depth: footprint });
+    expect(voxels.some((v) => AWNING_COLORS.includes(v.color))).toBe(true);
+  });
+
+  test("bakery has a brown bread sign", () => {
+    const c = BUILDING_COLORS.bakery;
+    const { footprint, walls } = BUILDING_LAYOUT.bakery;
+    const voxels = publicBuildingVoxels({ kind: "bakery", body: c.body, accent: c.accent, roof: c.roof, walls, width: footprint, depth: footprint });
+    expect(voxels.some((v) => v.color === BREAD_BROWN)).toBe(true);
+  });
+
+  test("pet shop has a teal paw on the facade", () => {
+    const c = BUILDING_COLORS.petshop;
+    const { footprint, walls } = BUILDING_LAYOUT.petshop;
+    const voxels = publicBuildingVoxels({ kind: "petshop", body: c.body, accent: c.accent, roof: c.roof, walls, width: footprint, depth: footprint });
+    expect(voxels.some((v) => v.color === c.accent && v.y === 2)).toBe(true);
   });
 });

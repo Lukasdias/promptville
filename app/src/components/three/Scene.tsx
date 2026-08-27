@@ -1,9 +1,12 @@
 import { useMemo } from "react";
 import { useNeighborhood } from "../../query";
-import { buildPerimeterRing, buildStreets, cityBounds, extendRoadsToRing, layoutCity } from "../../layout";
+import { buildPerimeterRing, buildStreets, cityBounds, CIVIC_PLAZA, extendRoadsToRing, layoutCity } from "../../layout";
 import { traffic } from "../../config";
 import { TrafficController, findIntersections } from "../../traffic";
-import { buildRoadGraph } from "../../roadgraph";
+import { attachCurbs, buildRoadGraph, type Curb } from "../../roadgraph";
+import { layoutCivicDistrict } from "../../civic";
+import type { BuildingKind } from "../../types";
+import { useActivityPump } from "../../activity";
 import { Ground } from "./Ground";
 import { City } from "./City";
 import { World } from "./World";
@@ -13,14 +16,16 @@ import { Mountains, mountainOuterRadius } from "./Mountains";
 import { People } from "./People";
 import { Traffic } from "./Traffic";
 import { Crossers } from "./Crossers";
+import { CivicDistrict } from "./CivicDistrict";
 import { SelectedBanner } from "./SelectedBanner";
 
 export function Scene() {
   const { data } = useNeighborhood();
   const blocks = useMemo(
-    () => (data ? layoutCity(data.projects) : []),
+    () => (data ? layoutCity(data.projects, { plaza: CIVIC_PLAZA }) : []),
     [data],
   );
+  const plazaBlock = useMemo(() => blocks.find((b) => b.kind === "plaza") ?? null, [blocks]);
 
   // Visible roads = main grid + ring. The ring connects every dead end.
   const mainStreets = useMemo(() => buildStreets(blocks), [blocks]);
@@ -46,6 +51,26 @@ export function Scene() {
     [graphStreets, intersections],
   );
 
+  const civic = useMemo(
+    () => (plazaBlock && graph.nodes.length > 0 ? layoutCivicDistrict(plazaBlock, graphStreets, graph) : null),
+    [plazaBlock, graphStreets, graph],
+  );
+
+  const { graph: graphWithCurbs, curbs } = useMemo(
+    () =>
+      civic
+        ? attachCurbs(graph, civic.lots.map((l) => ({ buildingId: l.kind, x: l.curb.x, z: l.curb.z })))
+        : { graph, curbs: [] as Curb[] },
+    [civic, graph],
+  );
+
+  const visitorBuildings = useMemo<BuildingKind[]>(
+    () => civic?.lots.map((l) => l.kind) ?? [],
+    [civic],
+  );
+
+  useActivityPump();
+
   return (
     <>
       <color attach="background" args={["#aee6ff"]} />
@@ -67,8 +92,17 @@ export function Scene() {
       <City />
       <World blocks={blocks} streets={renderStreets} />
       <Details blocks={blocks} streets={renderStreets} />
+      <CivicDistrict civic={civic} />
       <People />
-      <Traffic streets={renderStreets} intersections={intersections} controller={controller} graph={graph} />
+      <Traffic
+        streets={renderStreets}
+        intersections={intersections}
+        controller={controller}
+        graph={graphWithCurbs}
+        curbs={curbs}
+        visitorPaths={civic?.visitorPaths ?? []}
+        visitorBuildings={visitorBuildings}
+      />
       <Crossers streets={mainStreets} intersections={intersections} controller={controller} />
       <Mountains blocks={blocks} streets={renderStreets} />
       <SelectedBanner />
