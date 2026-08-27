@@ -12,6 +12,7 @@ export const environment = {
 export const traffic = {
   cars: 5,
   runners: 6,
+  walkers: 3,
   // Base green-light cycle in seconds; each phase gets a random ±30% offset.
   cycle: 8,
 };

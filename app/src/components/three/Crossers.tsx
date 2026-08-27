@@ -46,7 +46,7 @@ function Crosser({ spec, controller }: { spec: CrosserSpec; controller: TrafficC
 
   const voxels = useMemo(() => personVoxels(spec.shirt), [spec.shirt]);
 
-  useFrame((_, delta) => {
+  useFrame(({ clock }, delta) => {
     const g = ref.current;
     if (!g) return;
     // Cross when the avenue is red (side-street green).
@@ -81,7 +81,9 @@ function Crosser({ spec, controller }: { spec: CrosserSpec; controller: TrafficC
     }
 
     pos.current = p;
-    g.position.set(spec.intersection.x + spec.axisOffset, 0, spec.intersection.z + p);
+    // Idle bob while waiting at the curb.
+    const bob = crossing.current ? 0 : Math.sin(clock.elapsedTime * 2.2) * 0.025;
+    g.position.set(spec.intersection.x + spec.axisOffset, bob, spec.intersection.z + p);
     g.rotation.y = dir.current === 1 ? Math.PI / 2 : -Math.PI / 2;
   });
 
