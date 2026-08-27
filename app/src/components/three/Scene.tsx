@@ -1,11 +1,12 @@
 import { useMemo } from "react";
-import { useApp } from "../../store";
+import { useNeighborhood } from "../../query";
 import { layoutCity } from "../../layout";
 import { Ground } from "./Ground";
 import { City } from "./City";
+import { World } from "./World";
 
 export function Scene() {
-  const data = useApp((s) => s.data);
+  const { data } = useNeighborhood();
   const blocks = useMemo(
     () => (data ? layoutCity(data.projects) : []),
     [data],
@@ -29,6 +30,7 @@ export function Scene() {
       />
       <Ground blocks={blocks} />
       <City />
+      <World />
     </>
   );
 }

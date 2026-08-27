@@ -1,15 +1,8 @@
-import { useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { Scene } from "./components/three/Scene";
-import { useApp } from "./store";
 
 export default function App() {
-  const load = useApp((s) => s.load);
-  useEffect(() => {
-    void load();
-  }, [load]);
-
   return (
     <div className="relative h-full w-full overflow-hidden">
       <Canvas

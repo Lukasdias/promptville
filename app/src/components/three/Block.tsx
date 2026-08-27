@@ -1,9 +1,9 @@
 import type { PlacedBlock } from "../../layout";
-import { useApp } from "../../store";
+import { useNeighborhood } from "../../query";
 import { House } from "./House";
 
 export function Block({ block, paletteIndex }: { block: PlacedBlock; paletteIndex: number }) {
-  const data = useApp((s) => s.data);
+  const { data } = useNeighborhood();
   const project = data?.projects.find((p) => p.id === block.projectId);
   if (!project) return null;
 
