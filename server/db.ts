@@ -52,20 +52,23 @@ function projectName(name: string | null, worktree: string): string {
 
 export function queryNeighborhood(db: Database): Neighborhood {
   const rows = db
-    .query<{
-      id: string;
-      title: string;
-      model: string | null;
-      agent: string | null;
-      cost: number;
-      tokens_input: number;
-      tokens_output: number;
-      time_created: number;
-      project_id: string;
-      worktree: string;
-      name: string | null;
-      icon_color: string | null;
-    }>(`SELECT s.id, s.title, s.model, s.agent, s.cost,
+    .query<
+      {
+        id: string;
+        title: string;
+        model: string | null;
+        agent: string | null;
+        cost: number;
+        tokens_input: number;
+        tokens_output: number;
+        time_created: number;
+        project_id: string;
+        worktree: string;
+        name: string | null;
+        icon_color: string | null;
+      },
+      any[]
+    >(`SELECT s.id, s.title, s.model, s.agent, s.cost,
                 s.tokens_input, s.tokens_output, s.time_created,
                 p.id AS project_id, p.worktree, p.name, p.icon_color
          FROM session s JOIN project p ON p.id = s.project_id
