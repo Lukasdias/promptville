@@ -1,8 +1,18 @@
+import { useEffect } from "react";
 import type { PlacedBlock, Street } from "../../layout";
 import { useApp } from "../../store";
 import { isPanActive } from "../../pan";
 import { COLORS } from "../../theme";
 import { pickParkSpot, PARK_RADIUS } from "../../placement";
+import {
+  asphaltMaterial,
+  grassLotMaterial,
+  grassMaterial,
+  grassTexture,
+  GRASS_TILE_WORLD,
+  parkMaterial,
+  plazaMaterial,
+} from "../../textures";
 
 const DASH_PERIOD = 2.4;
 const DASH_LENGTH = 1.1;
@@ -48,6 +58,13 @@ export function Ground({
     clearSelection();
   };
 
+  // Keep the grass tile a constant world size as the field grows with the city.
+  useEffect(() => {
+    const repeat = Math.max(2, Math.round((extent * 2) / GRASS_TILE_WORLD));
+    grassTexture.repeat.set(repeat, repeat);
+    grassTexture.needsUpdate = true;
+  }, [extent]);
+
   if (blocks.length === 0) return null;
   const maxX = Math.max(...blocks.map((b) => b.x + b.width / 2)) + 8;
   const maxZ = Math.max(...blocks.map((b) => b.z + b.depth / 2)) + 8;
@@ -60,9 +77,8 @@ export function Ground({
   return (
     <group>
       {/* Grass base — extends past the mountain ring so no corner lacks ground */}
-      <mesh position={[cx, -0.05, cz]} rotation-x={-Math.PI / 2} onClick={clear}>
+      <mesh position={[cx, -0.05, cz]} rotation-x={-Math.PI / 2} onClick={clear} material={grassMaterial}>
         <planeGeometry args={[extent * 2, extent * 2]} />
-        <meshStandardMaterial color={COLORS.grass} />
       </mesh>
 
       {/* Streets: dark asphalt with a white center stripe */}
@@ -73,9 +89,9 @@ export function Ground({
           rotation-x={-Math.PI / 2}
           receiveShadow
           onClick={clear}
+          material={asphaltMaterial}
         >
           <planeGeometry args={[s.width, s.depth]} />
-          <meshStandardMaterial color={COLORS.road} />
         </mesh>
       ))}
       {streets.flatMap((s) => streetDashes(s)).map((dash, i) => (
@@ -95,9 +111,8 @@ export function Ground({
         if (b.kind === "plaza") {
           return (
             <group key={b.projectId}>
-              <mesh position={[b.x, -0.039, b.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear}>
+              <mesh position={[b.x, -0.039, b.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear} material={plazaMaterial}>
                 <planeGeometry args={[b.width + 0.4, b.depth + 0.4]} />
-                <meshStandardMaterial color="#f7efe0" />
               </mesh>
               <mesh position={[b.x, -0.038, b.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear}>
                 <circleGeometry args={[3, 24]} />
@@ -113,18 +128,17 @@ export function Ground({
             rotation-x={-Math.PI / 2}
             receiveShadow
             onClick={clear}
+            material={grassLotMaterial}
           >
             <planeGeometry args={[b.width + 0.4, b.depth + 0.4]} />
-            <meshStandardMaterial color={COLORS.grassLot} />
           </mesh>
         );
       })}
 
       {/* Park in a free corner */}
       {park && (
-        <mesh position={[park.x, -0.04, park.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear}>
+        <mesh position={[park.x, -0.04, park.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear} material={parkMaterial}>
           <circleGeometry args={[PARK_RADIUS, 24]} />
-          <meshStandardMaterial color={COLORS.grassDark} />
         </mesh>
       )}
     </group>
