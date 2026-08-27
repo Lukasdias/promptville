@@ -5,6 +5,8 @@ import { Ground } from "./Ground";
 import { City } from "./City";
 import { World } from "./World";
 import { Mountains } from "./Mountains";
+import { People } from "./People";
+import { Traffic } from "./Traffic";
 import { SelectedBanner } from "./SelectedBanner";
 
 export function Scene() {
@@ -34,6 +36,8 @@ export function Scene() {
       <Ground blocks={blocks} streets={streets} />
       <City />
       <World />
+      <People />
+      <Traffic streets={streets} />
       <Mountains blocks={blocks} />
       <SelectedBanner />
     </>

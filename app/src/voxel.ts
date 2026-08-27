@@ -11,6 +11,12 @@ export const CHIMNEY_COLOR = "#c96f6f";
 export const TRUNK_COLOR = "#8b5a2b";
 export const POLE_COLOR = "#5a5a5a";
 export const GLOW_COLOR = "#ffd98a";
+export const SKIN_COLOR = "#f0c8a0";
+export const PANT_COLOR = "#4a4453";
+export const ANTENNA_COLOR = "#8b8b8b";
+export const ANTENNA_TIP_COLOR = "#ff5252";
+export const MOUNTAIN_COLOR = "#8a9b6e";
+export const SNOW_COLOR = "#f4f1e6";
 
 export interface HouseVoxelOptions {
   body: string;
@@ -22,6 +28,9 @@ export interface HouseVoxelOptions {
   walls: number;
   pitched?: boolean;
   chimney?: boolean;
+  windows?: boolean;
+  sideWindows?: boolean;
+  antenna?: boolean;
 }
 
 export function houseVoxels(o: HouseVoxelOptions): Voxel[] {
@@ -53,10 +62,20 @@ export function houseVoxels(o: HouseVoxelOptions): Voxel[] {
     push(0, 1, hd, door);
   }
 
-  // Windows
-  if (o.walls >= 4) {
+  // Front windows
+  if (o.windows !== false && o.walls >= 4) {
     push(-2, 2, hd, window);
     push(2, 2, hd, window);
+  }
+
+  // Side window columns (mansion / skyscraper)
+  if (o.sideWindows) {
+    for (let y = 2; y < o.walls - 1; y += 2) {
+      push(hw, y, -1, window);
+      push(hw, y, 1, window);
+      push(-hw, y, -1, window);
+      push(-hw, y, 1, window);
+    }
   }
 
   if (pitched) {
@@ -79,6 +98,10 @@ export function houseVoxels(o: HouseVoxelOptions): Voxel[] {
       }
     }
     if (o.chimney) push(2, o.walls + 1, 0, CHIMNEY_COLOR);
+    if (o.antenna) {
+      push(0, o.walls + 1, 0, ANTENNA_COLOR);
+      push(0, o.walls + 2, 0, ANTENNA_TIP_COLOR);
+    }
   }
 
   return voxels;
@@ -106,21 +129,70 @@ export function lampVoxels(pole: string = POLE_COLOR, glow: string = GLOW_COLOR)
   return voxels;
 }
 
-export function mountainVoxels(
-  height: number,
-  base: string = "#8a9b6e",
-  snow: string = "#f4f1e6",
+export function personVoxels(shirt: string, skin: string = SKIN_COLOR): Voxel[] {
+  const voxels: Voxel[] = [];
+  voxels.push({ x: 0, y: 0, z: 0, color: PANT_COLOR });
+  voxels.push({ x: 0, y: 1, z: 0, color: shirt });
+  voxels.push({ x: 0, y: 2, z: 0, color: shirt });
+  voxels.push({ x: 0, y: 3, z: 0, color: skin });
+  return voxels;
+}
+
+export function carVoxels(body: string, window: string = WINDOW_COLOR): Voxel[] {
+  const voxels: Voxel[] = [];
+  voxels.push({ x: -1, y: 0, z: 0, color: body });
+  voxels.push({ x: 0, y: 0, z: 0, color: body });
+  voxels.push({ x: 1, y: 0, z: 0, color: body });
+  voxels.push({ x: -1, y: 1, z: 0, color: window });
+  voxels.push({ x: 0, y: 1, z: 0, color: body });
+  voxels.push({ x: 1, y: 1, z: 0, color: window });
+  return voxels;
+}
+
+// Translates a unit-grid pattern onto an absolute position for a given voxel size.
+export function placeVoxels(pattern: Voxel[], bx: number, bz: number, size: number): Voxel[] {
+  return pattern.map((v) => ({
+    x: bx / size - 0.5 + v.x,
+    y: v.y,
+    z: bz / size - 0.5 + v.z,
+    color: v.color,
+  }));
+}
+
+// A continuous ridge ring around (cx, cz): columns of voxels whose height follows
+// smooth sinusoidal peaks around the ring, with a falloff away from the centerline.
+// No angular gaps — adjacent angle samples blend into a closed wall.
+export function mountainRingVoxels(
+  cx: number,
+  cz: number,
+  radius: number,
+  halfWidth: number,
+  base: string = MOUNTAIN_COLOR,
+  snow: string = SNOW_COLOR,
 ): Voxel[] {
   const voxels: Voxel[] = [];
-  for (let y = 0; y < height; y++) {
-    const r = height - 1 - y;
-    const isSnow = y >= height - 2;
-    const color = isSnow ? snow : base;
-    for (let x = -r; x <= r; x++) {
-      for (let z = -r; z <= r; z++) {
-        voxels.push({ x, y, z, color });
+  const min = Math.floor(-radius - halfWidth);
+  const max = Math.ceil(radius + halfWidth);
+
+  for (let x = min; x <= max; x++) {
+    for (let z = min; z <= max; z++) {
+      const dx = x - cx;
+      const dz = z - cz;
+      const d = Math.sqrt(dx * dx + dz * dz);
+      const t = Math.abs(d - radius);
+      if (t >= halfWidth) continue;
+      const falloff = 1 - t / halfWidth;
+      const angle = Math.atan2(dz, dx);
+      const peak = 11 + Math.sin(angle * 2 + 1.3) * 3.2 + Math.sin(angle * 5 + 0.7) * 2.6;
+      const h = Math.round(peak * falloff);
+      if (h <= 0) continue;
+      const isSnowy = h >= 13;
+      const snowDepth = isSnowy ? 2 : 0;
+      for (let y = 0; y < h; y++) {
+        voxels.push({ x, y, z, color: y >= h - snowDepth ? snow : base });
       }
     }
   }
+
   return voxels;
 }

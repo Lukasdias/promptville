@@ -2,6 +2,34 @@ import type { PlacedBlock, Street } from "../../layout";
 import { useApp } from "../../store";
 import { COLORS } from "../../theme";
 
+const DASH_PERIOD = 2.4;
+const DASH_LENGTH = 1.1;
+
+interface Dash {
+  x: number;
+  z: number;
+  w: number;
+  d: number;
+}
+
+function streetDashes(s: Street): Dash[] {
+  const out: Dash[] = [];
+  if (s.width >= s.depth) {
+    const n = Math.floor(s.width / DASH_PERIOD);
+    const d = Math.max(0.12, s.depth * 0.16);
+    for (let i = 0; i < n; i++) {
+      out.push({ x: s.x - s.width / 2 + (i + 0.5) * DASH_PERIOD, z: s.z, w: DASH_LENGTH, d });
+    }
+  } else {
+    const n = Math.floor(s.depth / DASH_PERIOD);
+    const w = Math.max(0.12, s.width * 0.16);
+    for (let i = 0; i < n; i++) {
+      out.push({ x: s.x, z: s.z - s.depth / 2 + (i + 0.5) * DASH_PERIOD, w, d: DASH_LENGTH });
+    }
+  }
+  return out;
+}
+
 function pickParkSpot(
   blocks: PlacedBlock[],
   minX: number,
@@ -61,7 +89,7 @@ export function Ground({
         <meshStandardMaterial color={COLORS.grass} />
       </mesh>
 
-      {/* Streets: connected graph filling the gaps between blocks */}
+      {/* Streets: dark asphalt with a white center stripe */}
       {streets.map((s, i) => (
         <mesh
           key={i}
@@ -72,6 +100,17 @@ export function Ground({
         >
           <planeGeometry args={[s.width, s.depth]} />
           <meshStandardMaterial color={COLORS.road} />
+        </mesh>
+      ))}
+      {streets.flatMap((s) => streetDashes(s)).map((dash, i) => (
+        <mesh
+          key={i}
+          position={[dash.x, -0.042, dash.z]}
+          rotation-x={-Math.PI / 2}
+          onClick={clear}
+        >
+          <planeGeometry args={[dash.w, dash.d]} />
+          <meshStandardMaterial color={COLORS.roadLine} />
         </mesh>
       ))}
 

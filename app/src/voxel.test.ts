@@ -3,12 +3,17 @@ import {
   houseVoxels,
   treeVoxels,
   lampVoxels,
-  mountainVoxels,
+  personVoxels,
+  carVoxels,
+  placeVoxels,
+  mountainRingVoxels,
   DOOR_COLOR,
   WINDOW_COLOR,
   CHIMNEY_COLOR,
   TRUNK_COLOR,
   GLOW_COLOR,
+  SKIN_COLOR,
+  SNOW_COLOR,
 } from "./voxel";
 
 describe("houseVoxels", () => {
@@ -69,17 +74,59 @@ describe("lampVoxels", () => {
   });
 });
 
-describe("mountainVoxels", () => {
-  test("is a solid centered pyramid with snow cap", () => {
-    const h = 6;
-    const voxels = mountainVoxels(h);
-    const baseLayer = voxels.filter((v) => v.y === 0);
-    expect(baseLayer).toHaveLength((2 * (h - 1) + 1) ** 2);
-    expect(voxels.filter((v) => v.y === h - 1)).toHaveLength(1); // apex
-    expect(voxels.filter((v) => v.y === h - 1)[0].color).toBe("#f4f1e6"); // snow apex
-    for (const v of voxels) {
-      expect(Math.abs(v.x)).toBeLessThanOrEqual(h - 1 - v.y);
-      expect(Math.abs(v.z)).toBeLessThanOrEqual(h - 1 - v.y);
+describe("mountainRingVoxels", () => {
+  test("forms a continuous closed ring with no angular gaps", () => {
+    const cx = 0;
+    const cz = 0;
+    const radius = 24;
+    const halfWidth = 6;
+    const voxels = mountainRingVoxels(cx, cz, radius, halfWidth);
+    expect(voxels.length).toBeGreaterThan(5000);
+
+    const hasVoxelNear = (angle: number) =>
+      voxels.some((v) => {
+        const a = Math.atan2(v.z - cz, v.x - cx);
+        let diff = Math.abs(a - angle);
+        diff = Math.min(diff, Math.PI * 2 - diff);
+        const d = Math.sqrt((v.x - cx) ** 2 + (v.z - cz) ** 2);
+        return diff < 0.06 && d > radius - halfWidth && d < radius + halfWidth;
+      });
+
+    for (let i = 0; i < 72; i++) {
+      const angle = (i / 72) * Math.PI * 2;
+      expect(hasVoxelNear(angle)).toBe(true);
     }
+  });
+
+  test("stays inside the ring bounds and caps tall peaks with snow", () => {
+    const voxels = mountainRingVoxels(0, 0, 20, 5);
+    for (const v of voxels) {
+      const d = Math.sqrt(v.x ** 2 + v.z ** 2);
+      expect(d).toBeGreaterThanOrEqual(15);
+      expect(d).toBeLessThanOrEqual(25);
+    }
+    expect(voxels.some((v) => v.color === SNOW_COLOR)).toBe(true);
+  });
+});
+
+describe("personVoxels / carVoxels / placeVoxels", () => {
+  test("person is a small stack with shirt and head", () => {
+    const voxels = personVoxels("#ffb3ba");
+    expect(voxels).toHaveLength(4);
+    expect(voxels.filter((v) => v.color === "#ffb3ba")).toHaveLength(2);
+    expect(voxels[voxels.length - 1].color).toBe(SKIN_COLOR);
+  });
+
+  test("car is a low body with a cabin", () => {
+    const voxels = carVoxels("#ff8fa3");
+    expect(voxels).toHaveLength(6);
+    expect(voxels.filter((v) => v.color === "#ff8fa3")).toHaveLength(4);
+  });
+
+  test("placeVoxels offsets a pattern onto an absolute base at a given size", () => {
+    const placed = placeVoxels(personVoxels("#fff"), 3.5, -2, 0.15);
+    expect(placed[0].x).toBeCloseTo(3.5 / 0.15 - 0.5);
+    expect(placed[0].z).toBeCloseTo(-2 / 0.15 - 0.5);
+    expect(placed[0].y).toBe(0);
   });
 });
