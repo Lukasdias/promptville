@@ -15,16 +15,18 @@ New browser-only module (needs DOM canvas; not unit-tested under `bun test`).
 
 - `makeTileableTexture(size, paint): CanvasTexture` — creates a `size × size` canvas, runs `paint(ctx)` (a seeded callback), sets `wrapS`/`wrapT` to `RepeatWrapping`.
 - All painters use seeded `mulberry32` from `app/src/rand.ts` → deterministic grain (consistent with the deterministic layout).
-- **6 shared singletons** (1 texture + 1 `MeshStandardMaterial` each), fixed `texture.repeat` (uniform scale across all rects — no per-street materials):
+- **6 shared texture singletons** (one canvas each — the expensive generation happens once per surface). Material strategy:
+  - **Shared material** where the rect size is fixed or the pattern is isotropic noise (grass field, grass lots, park, asphalt grain, plaza, crosswalks). `texture.repeat` is uniform.
+  - **Per-rect texture clone + material** where a structured pattern must keep constant world scale on varying-length rects — the sidewalk brick. `texture.clone()` shares the canvas image; each clone only carries its own `repeat`.
 
 | Export | Surface | Base | Pattern |
 |---|---|---|---|
-| `grassTexture` / `grassMaterial` | field | `#9bd46a` | soft two-tone mottling (pastel blobs) |
+| `grassTexture` / `grassMaterial` | field | `#9bd46a` | soft two-tone mottling (pastel blobs), repeat scales with the field plane |
 | `grassLotTexture` / `grassLotMaterial` | block lots | `#8fbf5c` | mottling + faint 45° mow stripes |
 | `parkTexture` / `parkMaterial` | park pad | `#86c255` | alternating lawn stripes |
-| `asphaltTexture` / `asphaltMaterial` | streets | `#3c3a42` | fine speckle grain + 2 faint darker wear lanes |
+| `asphaltTexture` / `asphaltMaterial` | streets | `#3c3a42` | fine isotropic speckle grain (no directional lanes — would misalign on rotated streets) |
 | `plazaTexture` / `plazaMaterial` | plaza pad | cream `#f7efe0` | warm stone tiles with soft grout grid |
-| `sidewalkTexture` / `sidewalkMaterial` | sidewalks | brick | existing brick pattern, consolidated |
+| `sidewalkTexture` | sidewalks | brick | existing brick pattern; per-strip clones for scale |
 
 Color constants live in `app/src/theme.ts` (e.g. `GRASS_DARK`, `GRASS_LIGHT`, `ASPHALT_GRAIN`, `WEAR_LANE`, `STONE_LINE`, `STONE_BASE`, `MOW_STRIPE`, `LAWN_A`, `LAWN_B`).
 
@@ -45,7 +47,7 @@ Shared singletons replace:
 
 ### `Sidewalks.tsx`
 
-- Sidewalk strips → shared `sidewalkMaterial` (one brick texture + material; per-rect UV handled by the existing per-rect repeat? No — shared material means a single repeat. Sidewalk width is constant, so a fixed repeat looks uniform and correct). Remove per-strip `makeBrickTexture`/material allocation; keep the single shared brick texture.
+- Sidewalk strips → shared `sidewalkTexture` with per-strip texture clones (repeat keeps brick world scale on varying-length strips). Remove per-strip `makeBrickTexture`/canvas generation — one canvas, shared image.
 - **Crosswalks restyled** to brick-tone zebra: each stripe is a main stripe (`COLORS.crosswalk`-light brick) plus a thin darker edge strip offset on one side ("paper shadow", matching the paper-card HUD). Keep ~4 stripes crossing the avenue.
 - **Both directions**: at each intersection, render crossings over the avenue (stripes perpendicular to the avenue, as today) **and** over the side street (stripes along the avenue axis) when a vertical street exists at the intersection — completes the crossing.
 
