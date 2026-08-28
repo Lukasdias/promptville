@@ -71,6 +71,16 @@ export function SelectedBanner() {
           <TitleChip key={selectedBuilding ?? selected?.id} title={title} />
         </Html>
       </Float>
+      <Float speed={2.6} rotationIntensity={0} floatIntensity={0.8}>
+        <mesh position={[0, 0.6, 0]} castShadow>
+          <sphereGeometry args={[0.22, 16, 16]} />
+          <meshStandardMaterial color="#ff5050" />
+        </mesh>
+        <mesh position={[0, 0.85, 0]}>
+          <coneGeometry args={[0.16, 0.3, 12]} />
+          <meshStandardMaterial color="#ffd54a" />
+        </mesh>
+      </Float>
       <mesh position={[0, -1.4, 0]}>
         <cylinderGeometry args={[0.02, 0.02, 1.4, 6]} />
         <meshStandardMaterial color="#4a4453" />
