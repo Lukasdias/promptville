@@ -10,6 +10,7 @@ import { TweakPanel } from "./components/hud/TweakPanel";
 import { LegendCard } from "./components/hud/LegendCard";
 import { LoadingState } from "./components/hud/LoadingState";
 import { MissingState } from "./components/hud/MissingState";
+import { Toasts } from "./components/hud/Toasts";
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
       <HelpPanel />
       <TweakPanel />
       <LegendCard />
+      <Toasts />
       <LoadingState />
       <MissingState />
     </div>
