@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { animated, useSpring } from "@react-spring/web";
 import { useApp } from "../../store";
 import { BUILDING_META } from "../../civic";
+import { openCommand } from "../../navigator";
+import { useSession } from "../../query";
 
 export function DetailCard() {
   const selected = useApp((s) => s.selected);
@@ -9,6 +11,8 @@ export function DetailCard() {
   const activity = useApp((s) => s.activity);
   const clearSelection = useApp((s) => s.clearSelection);
   const showDetailCard = useApp((s) => s.tweaks.showDetailCard);
+  const pushToast = useApp((s) => s.pushToast);
+  const { data: detail } = useSession(selected?.id ?? null);
 
   const show = Boolean(selected || selectedBuilding);
 
@@ -65,6 +69,23 @@ export function DetailCard() {
           />
           <Row k="Date" v={date} />
         </dl>
+        {detail?.snippet && (
+          <p className="mt-2 text-xs leading-snug opacity-70">{detail.snippet}</p>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            if (!selected) return;
+            const cmd = openCommand(selected);
+            navigator.clipboard.writeText(cmd).then(
+              () => pushToast("success", `Copied: ${cmd}`),
+              () => pushToast("error", "Could not copy command"),
+            );
+          }}
+          className="mt-3 w-full rounded-lg border-2 border-ink/40 bg-cream py-1.5 font-display text-sm font-semibold hover:bg-ink/10"
+        >
+          Open in opencode ↗
+        </button>
       </>
     );
   } else {
