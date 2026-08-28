@@ -1,6 +1,7 @@
 import { useCity } from "../../city";
 import { useActivityPump } from "../../activity";
 import { Ground } from "./Ground";
+import { Terrain } from "./Terrain";
 import { City } from "./City";
 import { World } from "./World";
 import { Details } from "./Details";
@@ -24,6 +25,7 @@ export function Scene() {
     curbs,
     civic,
     extent,
+    bounds,
   } = useCity();
 
   useActivityPump();
@@ -44,7 +46,8 @@ export function Scene() {
         shadow-camera-top={45}
         shadow-camera-bottom={-45}
       />
-      <Ground blocks={blocks} streets={renderStreets} extent={extent} />
+      <Terrain extent={extent} bounds={bounds} />
+      <Ground blocks={blocks} streets={renderStreets} />
       <Sidewalks streets={renderStreets} intersections={crosswalkIntersections} />
       <City />
       <World blocks={blocks} streets={renderStreets} />

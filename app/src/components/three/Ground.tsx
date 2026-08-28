@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import type { PlacedBlock, Street } from "../../layout";
 import { useApp } from "../../store";
 import { isPanActive } from "../../pan";
@@ -7,9 +6,6 @@ import { pickParkSpot, PARK_RADIUS } from "../../placement";
 import {
   asphaltMaterial,
   grassLotMaterial,
-  grassMaterial,
-  grassTexture,
-  GRASS_TILE_WORLD,
   parkMaterial,
   plazaMaterial,
 } from "../../textures";
@@ -45,11 +41,9 @@ function streetDashes(s: Street): Dash[] {
 export function Ground({
   blocks,
   streets,
-  extent,
 }: {
   blocks: PlacedBlock[];
   streets: Street[];
-  extent: number;
 }) {
   const clearSelection = useApp((s) => s.clearSelection);
   const clear = (e: { stopPropagation: () => void }) => {
@@ -58,29 +52,15 @@ export function Ground({
     clearSelection();
   };
 
-  // Keep the grass tile a constant world size as the field grows with the city.
-  useEffect(() => {
-    const repeat = Math.max(2, Math.round((extent * 2) / GRASS_TILE_WORLD));
-    grassTexture.repeat.set(repeat, repeat);
-    grassTexture.needsUpdate = true;
-  }, [extent]);
-
   if (blocks.length === 0) return null;
   const maxX = Math.max(...blocks.map((b) => b.x + b.width / 2)) + 8;
   const maxZ = Math.max(...blocks.map((b) => b.z + b.depth / 2)) + 8;
   const minX = Math.min(...blocks.map((b) => b.x - b.width / 2)) - 8;
   const minZ = Math.min(...blocks.map((b) => b.z - b.depth / 2)) - 8;
-  const cx = (maxX + minX) / 2;
-  const cz = (maxZ + minZ) / 2;
   const park = pickParkSpot(blocks, minX, maxX, minZ, maxZ);
 
   return (
     <group>
-      {/* Grass base — extends past the mountain ring so no corner lacks ground */}
-      <mesh position={[cx, -0.05, cz]} rotation-x={-Math.PI / 2} onClick={clear} material={grassMaterial}>
-        <planeGeometry args={[extent * 2, extent * 2]} />
-      </mesh>
-
       {/* Streets: dark asphalt with a white center stripe */}
       {streets.map((s, i) => (
         <mesh
