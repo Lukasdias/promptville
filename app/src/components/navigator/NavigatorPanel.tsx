@@ -7,6 +7,7 @@ import { useNeighborhood } from "../../query";
 import { filterNavItems, groupByDay, sortNavItems, type NavItem } from "../../navigator";
 import { useApp } from "../../store";
 import { SessionRow } from "./SessionRow";
+import { FilterCombobox } from "./FilterCombobox";
 
 type Row =
   | { kind: "day"; key: string; label: string }
@@ -117,34 +118,25 @@ export function NavigatorPanel() {
           </Tooltip>
         </div>
 
-        <div className="mt-2 flex flex-wrap gap-1 text-xs">
-          <select
-            multiple
-            value={filters.projects}
-            onChange={(e) => setFilter("projects", [...e.target.selectedOptions].map((o) => o.value))}
-            className="min-w-24 rounded-lg border-2 border-ink/40 bg-cream px-1 py-1"
-          >
-            <option value="" disabled>Projects</option>
-            {(data?.projects ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <select
-            multiple
-            value={filters.models}
-            onChange={(e) => setFilter("models", [...e.target.selectedOptions].map((o) => o.value))}
-            className="min-w-24 rounded-lg border-2 border-ink/40 bg-cream px-1 py-1"
-          >
-            <option value="" disabled>Models</option>
-            {possibleModels.map((m) => <option key={m} value={m}>{m}</option>)}
-          </select>
-          <select
-            multiple
-            value={filters.agents}
-            onChange={(e) => setFilter("agents", [...e.target.selectedOptions].map((o) => o.value))}
-            className="min-w-24 rounded-lg border-2 border-ink/40 bg-cream px-1 py-1"
-          >
-            <option value="" disabled>Agents</option>
-            {possibleAgents.map((a) => <option key={a} value={a}>{a}</option>)}
-          </select>
+        <div className="mt-2 flex flex-col gap-1.5 text-xs">
+          <FilterCombobox
+            label="Projects"
+            options={(data?.projects ?? []).map((p) => ({ value: p.id, label: p.name }))}
+            selected={filters.projects}
+            onChange={(v) => setFilter("projects", v)}
+          />
+          <FilterCombobox
+            label="Models"
+            options={possibleModels.map((m) => ({ value: m, label: m }))}
+            selected={filters.models}
+            onChange={(v) => setFilter("models", v)}
+          />
+          <FilterCombobox
+            label="Agents"
+            options={possibleAgents.map((a) => ({ value: a, label: a }))}
+            selected={filters.agents}
+            onChange={(v) => setFilter("agents", v)}
+          />
         </div>
 
         <div className="mt-3 flex items-center justify-between text-xs opacity-70">
