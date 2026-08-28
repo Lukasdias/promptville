@@ -1,6 +1,4 @@
 import type { BuildingKind } from "./types";
-import type { Street } from "./layout";
-import { COLORS } from "./theme";
 
 export interface Voxel {
   x: number;
@@ -403,52 +401,6 @@ export function placeVoxels(pattern: Voxel[], bx: number, bz: number, size: numb
     z: bz / size - 0.5 + v.z,
     color: v.color,
   }));
-}
-
-export const SIDEWALK_SIZE = 0.4;
-export const SIDEWALK_CELLS = 2;
-
-// Raised voxel sidewalks flanking every street, with a curb row on the
-// street-facing edge. Cells are emitted at world-relative grid positions
-// (x = wx / size - 0.5 so InstancedVoxels centers them at wx). Cells that
-// fall inside any street's road paving (a crossing street) are culled.
-export function streetSidewalkVoxels(
-  streets: Street[],
-  size: number = SIDEWALK_SIZE,
-  walk: string = COLORS.brick,
-  curb: string = COLORS.curb,
-): Voxel[] {
-  const insideRoad = (wx: number, wz: number) =>
-    streets.some((s) => Math.abs(wx - s.x) < s.width / 2 && Math.abs(wz - s.z) < s.depth / 2);
-
-  const voxels: Voxel[] = [];
-  const emit = (wx: number, wz: number, color: string) => {
-    if (insideRoad(wx, wz)) return;
-    voxels.push({ x: wx / size - 0.5, y: 0, z: wz / size - 0.5, color });
-  };
-
-  for (const s of streets) {
-    const horizontal = s.width >= s.depth;
-    const half = horizontal ? s.width / 2 : s.depth / 2;
-    const roadHalf = horizontal ? s.depth / 2 : s.width / 2;
-    const cOff = roadHalf + size / 2;
-    const wOff = roadHalf + size + size / 2;
-
-    for (let p = 0; p < Math.ceil((2 * half) / size); p++) {
-      const ac = -half + (p + 0.5) * size;
-      for (const sign of [-1, 1]) {
-        if (horizontal) {
-          emit(s.x + ac, s.z + sign * cOff, curb);
-          emit(s.x + ac, s.z + sign * wOff, walk);
-        } else {
-          emit(s.x + sign * cOff, s.z + ac, curb);
-          emit(s.x + sign * wOff, s.z + ac, walk);
-        }
-      }
-    }
-  }
-
-  return voxels;
 }
 
 // A continuous ridge ring around (cx, cz): columns of voxels whose height follows

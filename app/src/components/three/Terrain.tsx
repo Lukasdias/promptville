@@ -10,6 +10,9 @@ import { isPanActive } from "../../pan";
 
 const SEG = 120;
 const NOISE_SCALE = 0.02;
+const TERRAIN_SINK = 0.05;
+const HILL_NOISE_AMP = 0.6;
+const HILL_NOISE_FALLOFF = 8;
 
 export function Terrain({ extent, bounds }: { extent: number; bounds: Bounds | null }) {
   const clearSelection = useApp((s) => s.clearSelection);
@@ -29,7 +32,7 @@ export function Terrain({ extent, bounds }: { extent: number; bounds: Bounds | n
         const over = padOvershoot(wx, wz, pad);
         h = hillHeight(over);
         if (over > 0) {
-          h += (noise(wx * NOISE_SCALE, 0, wz * NOISE_SCALE) + 1) * 0.6 * Math.min(1, over / 8);
+          h += (noise(wx * NOISE_SCALE, 0, wz * NOISE_SCALE) + 1) * HILL_NOISE_AMP * Math.min(1, over / HILL_NOISE_FALLOFF);
         }
       }
       pos.setY(i, h);
@@ -43,7 +46,7 @@ export function Terrain({ extent, bounds }: { extent: number; bounds: Bounds | n
   return (
     <mesh
       geometry={geometry}
-      position={[0, -0.05, 0]}
+      position={[0, -TERRAIN_SINK, 0]}
       receiveShadow
       material={grassMaterial}
       onClick={(e) => {

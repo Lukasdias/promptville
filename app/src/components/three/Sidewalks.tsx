@@ -2,13 +2,20 @@ import { useMemo } from "react";
 import { MeshStandardMaterial } from "three";
 import type { Street } from "../../layout";
 import type { Intersection } from "../../traffic";
-import { streetSidewalkVoxels, SIDEWALK_SIZE } from "../../voxel";
+import { sidewalkSegments, SIDEWALK_HEIGHT, CURB_HEIGHT } from "../../sidewalk";
+import { sidewalkMaterialFor } from "../../textures";
 import { buildCrosswalks } from "../../crosswalk";
-import { CROSSWALK_BRICK } from "../../theme";
-import { InstancedVoxels } from "./InstancedVoxels";
+import { COLORS, CROSSWALK_BRICK } from "../../theme";
 import { useApp } from "../../store";
 import { isPanActive } from "../../pan";
 
+const CURB_MATERIAL = new MeshStandardMaterial({
+  color: COLORS.curb,
+  roughness: 1,
+  polygonOffset: true,
+  polygonOffsetFactor: -1,
+  polygonOffsetUnits: -1,
+});
 const CROSSWALK_MATERIAL = new MeshStandardMaterial({
   color: CROSSWALK_BRICK,
   roughness: 1,
@@ -16,6 +23,7 @@ const CROSSWALK_MATERIAL = new MeshStandardMaterial({
   polygonOffsetFactor: -1,
   polygonOffsetUnits: -1,
 });
+const CROSSWALK_TOP = 0.055;
 
 export function Sidewalks({
   streets,
@@ -25,10 +33,17 @@ export function Sidewalks({
   intersections: Intersection[];
 }) {
   const clearSelection = useApp((s) => s.clearSelection);
-  const voxels = useMemo(() => streetSidewalkVoxels(streets), [streets]);
+  const segments = useMemo(() => sidewalkSegments(streets), [streets]);
   const crosswalks = useMemo(
     () => buildCrosswalks(intersections, streets),
     [intersections, streets],
+  );
+  const materials = useMemo(
+    () =>
+      segments.map((seg) =>
+        seg.kind === "walk" ? sidewalkMaterialFor(seg.w, seg.d) : CURB_MATERIAL,
+      ),
+    [segments],
   );
 
   const clear = (e: { stopPropagation: () => void }) => {
@@ -39,11 +54,24 @@ export function Sidewalks({
 
   return (
     <group>
-      <InstancedVoxels voxels={voxels} voxelSize={SIDEWALK_SIZE} onClick={clear} />
+      {segments.map((seg, i) => {
+        const height = seg.kind === "walk" ? SIDEWALK_HEIGHT : CURB_HEIGHT;
+        return (
+          <mesh
+            key={i}
+            position={[seg.x, height / 2, seg.z]}
+            receiveShadow
+            material={materials[i]}
+            onClick={clear}
+          >
+            <boxGeometry args={[seg.w, height, seg.d]} />
+          </mesh>
+        );
+      })}
       {crosswalks.map((c, i) => (
         <mesh
           key={`cs${i}`}
-          position={[c.x, 0.055, c.z]}
+          position={[c.x, CROSSWALK_TOP, c.z]}
           rotation-x={-Math.PI / 2}
           material={CROSSWALK_MATERIAL}
           onClick={clear}

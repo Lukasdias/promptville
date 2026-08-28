@@ -6,6 +6,9 @@ import { pickParkSpot, PARK_RADIUS } from "../../placement";
 import { grassLotMaterialFor, parkMaterialFor, plazaMaterialFor } from "../../textures";
 
 const SURFACE_Y = 0.01;
+const PLAZA_PAD = 0.4;
+const PLAZA_WATER_RADIUS = 3;
+const PLAZA_WATER_LIFT = 0.005;
 
 export function Ground({ blocks }: { blocks: PlacedBlock[] }) {
   const clearSelection = useApp((s) => s.clearSelection);
@@ -30,14 +33,14 @@ export function Ground({ blocks }: { blocks: PlacedBlock[] }) {
     <group>
       {blocks.map((b) => {
         if (b.kind === "plaza") {
-          const mat = plazaMaterialFor(b.width + 0.4, b.depth + 0.4);
+          const mat = plazaMaterialFor(b.width + PLAZA_PAD, b.depth + PLAZA_PAD);
           return (
             <group key={b.projectId}>
               <mesh position={[b.x, SURFACE_Y, b.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear} material={mat}>
-                <planeGeometry args={[b.width + 0.4, b.depth + 0.4]} />
+                <planeGeometry args={[b.width + PLAZA_PAD, b.depth + PLAZA_PAD]} />
               </mesh>
-              <mesh position={[b.x, SURFACE_Y + 0.005, b.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear}>
-                <circleGeometry args={[3, 24]} />
+              <mesh position={[b.x, SURFACE_Y + PLAZA_WATER_LIFT, b.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear}>
+                <circleGeometry args={[PLAZA_WATER_RADIUS, 24]} />
                 <meshStandardMaterial color="#7fc9ff" />
               </mesh>
             </group>
