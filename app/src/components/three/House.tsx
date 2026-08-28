@@ -1,5 +1,6 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
+import { Float, Html } from "@react-three/drei";
 import type { Group } from "three";
 import { houseScale } from "../../layout";
 import { MODEL_ROOF, PROJECT_PALETTE, UNKNOWN_ROOF } from "../../theme";
@@ -40,6 +41,7 @@ export function House({
   const select = useApp((s) => s.select);
   const selected = useApp((s) => s.selected);
   const hoverRef = useRef(0);
+  const [hovered, setHovered] = useState(false);
 
   const bodyColor = useMemo(() => PROJECT_PALETTE[paletteIndex % PROJECT_PALETTE.length], [paletteIndex]);
   const roofColor = useMemo(() => (session.model ? MODEL_ROOF[session.model] ?? UNKNOWN_ROOF : UNKNOWN_ROOF), [session.model]);
@@ -107,14 +109,41 @@ export function House({
       onPointerOver={(e) => {
         e.stopPropagation();
         hoverRef.current = 1;
+        setHovered(true);
         document.body.style.cursor = "pointer";
       }}
       onPointerOut={() => {
         hoverRef.current = 0;
+        setHovered(false);
         document.body.style.cursor = "auto";
       }}
     >
       <InstancedVoxels voxels={voxels} />
+      {(hovered || isSelected) && (
+        <Float speed={2} rotationIntensity={0} floatIntensity={0.6}>
+          <Html center distanceFactor={12} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
+            <div
+              style={{
+                background: "#fff6e5",
+                border: "3px solid #4a4453",
+                borderRadius: 10,
+                boxShadow: "3px 3px 0 rgba(74,68,83,0.35)",
+                padding: "3px 8px",
+                fontFamily: '"Nunito", sans-serif',
+                fontWeight: 700,
+                fontSize: 12,
+                color: "#4a4453",
+                whiteSpace: "nowrap",
+                maxWidth: 180,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {session.title}
+            </div>
+          </Html>
+        </Float>
+      )}
     </group>
   );
 }

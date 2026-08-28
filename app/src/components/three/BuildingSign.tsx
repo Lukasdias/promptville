@@ -12,15 +12,20 @@ const SIGN_CSS = {
   fontWeight: 700,
   color: "#4a4453",
   whiteSpace: "nowrap" as const,
+  display: "inline-flex" as const,
+  alignItems: "center" as const,
+  gap: 5,
 };
 
 export function BuildingSign({ kind, x, z }: { kind: BuildingKind; x: number; z: number }) {
   const walls = BUILDING_LAYOUT[kind].walls;
   const y = walls * BUILDING_SIZE + 1.4;
+  const meta = BUILDING_META[kind];
   return (
     <Html position={[x, y, z]} center distanceFactor={16} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
       <div style={SIGN_CSS}>
-        {BUILDING_META[kind].emoji} {BUILDING_META[kind].name}
+        <meta.icon size={13} />
+        {meta.name}
       </div>
     </Html>
   );

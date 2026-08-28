@@ -31,6 +31,11 @@ export const COLORS = {
   snow: "#f4f1e6",
 };
 
+// Ground texture palette (bases reuse COLORS; painters derive tones via shade()).
+export const LAWN_B = "#7ab34a";
+export const STONE_GROUT = "#e6d6bc";
+export const CROSSWALK_BRICK = "#f2c9a8";
+
 export const BUILDING_COLORS: Record<BuildingKind, { body: string; accent: string; roof: string }> = {
   hospital: { body: "#ffffff", accent: "#ff5252", roof: "#eef2f5" },
   police: { body: "#7fb6ff", accent: "#f7f3e8", roof: "#5a8fd4" },

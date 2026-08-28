@@ -19,4 +19,25 @@ export const session = sqliteTable("session", {
   tokensInput: integer("tokens_input").notNull().default(0),
   tokensOutput: integer("tokens_output").notNull().default(0),
   timeCreated: integer("time_created").notNull(),
+  timeUpdated: integer("time_updated").notNull(),
+  slug: text("slug").notNull(),
+  directory: text("directory").notNull(),
+  parentId: text("parent_id"),
+});
+
+export const message = sqliteTable("message", {
+  id: text("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  timeCreated: integer("time_created").notNull(),
+  timeUpdated: integer("time_updated").notNull(),
+  data: text("data").notNull(),
+});
+
+export const part = sqliteTable("part", {
+  id: text("id").primaryKey(),
+  messageId: text("message_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  timeCreated: integer("time_created").notNull(),
+  timeUpdated: integer("time_updated").notNull(),
+  data: text("data").notNull(),
 });

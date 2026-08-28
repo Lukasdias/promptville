@@ -1,6 +1,8 @@
 import type { PlacedBlock, Street } from "./layout";
 import type { BuildingKind } from "./types";
 import type { RoadGraph } from "./roadgraph";
+import type { LucideIcon } from "lucide-react";
+import { Croissant, Flame, HeartPulse, PawPrint, Shield, ShoppingBag } from "lucide-react";
 
 export const BUILDING_SIZE = 0.4;
 
@@ -13,13 +15,13 @@ export const BUILDING_LAYOUT: Record<BuildingKind, { footprint: number; walls: n
   petshop: { footprint: 5, walls: 3 },
 };
 
-export const BUILDING_META: Record<BuildingKind, { name: string; emoji: string; services: string[] }> = {
-  hospital: { name: "Hospital", emoji: "🏥", services: ["24h emergency", "clinic", "pharmacy"] },
-  police: { name: "Police Station", emoji: "👮", services: ["patrol", "records", "lost & found"] },
-  fire: { name: "Fire Station", emoji: "🚒", services: ["rescue", "inspection", "first aid"] },
-  mall: { name: "Shopping Mall", emoji: "🛍️", services: ["shops", "food court", "cinema"] },
-  bakery: { name: "Bakery", emoji: "🥐", services: ["bread", "pastries", "coffee"] },
-  petshop: { name: "Pet Shop", emoji: "🐾", services: ["pets", "grooming", "food"] },
+export const BUILDING_META: Record<BuildingKind, { name: string; icon: LucideIcon; services: string[] }> = {
+  hospital: { name: "Hospital", icon: HeartPulse, services: ["24h emergency", "clinic", "pharmacy"] },
+  police: { name: "Police Station", icon: Shield, services: ["patrol", "records", "lost & found"] },
+  fire: { name: "Fire Station", icon: Flame, services: ["rescue", "inspection", "first aid"] },
+  mall: { name: "Shopping Mall", icon: ShoppingBag, services: ["shops", "food court", "cinema"] },
+  bakery: { name: "Bakery", icon: Croissant, services: ["bread", "pastries", "coffee"] },
+  petshop: { name: "Pet Shop", icon: PawPrint, services: ["pets", "grooming", "food"] },
 };
 
 export interface BuildingLot {

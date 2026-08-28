@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { Database } from "bun:sqlite";
-import { queryNeighborhood } from "./db";
+import { queryNeighborhood, sessionDetail } from "./db";
 
 export function defaultDbPath(): string {
   if (process.env.OPENCODE_DB_PATH) return process.env.OPENCODE_DB_PATH;
@@ -19,12 +19,19 @@ export function createHandler(
   let db: Database | null = null;
   return async function handleRequest(req: Request): Promise<Response> {
     const url = new URL(req.url);
-    if (url.pathname !== "/api/neighborhood") {
-      return Response.json({ error: "not found" }, { status: 404 });
-    }
     try {
-      db ??= open();
-      return Response.json(queryNeighborhood(db));
+      if (url.pathname === "/api/neighborhood") {
+        db ??= open();
+        return Response.json(queryNeighborhood(db));
+      }
+      const m = url.pathname.match(/^\/api\/session\/([^/]+)$/);
+      if (m) {
+        db ??= open();
+        const detail = sessionDetail(db, decodeURIComponent(m[1]));
+        if (!detail) return Response.json({ error: "not found" }, { status: 404 });
+        return Response.json(detail);
+      }
+      return Response.json({ error: "not found" }, { status: 404 });
     } catch (err) {
       return Response.json(
         {

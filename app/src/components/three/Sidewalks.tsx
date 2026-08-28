@@ -1,40 +1,14 @@
 import { useMemo } from "react";
-import { CanvasTexture, MeshStandardMaterial, RepeatWrapping } from "three";
+import { MeshStandardMaterial } from "three";
 import type { Street } from "../../layout";
 import type { Intersection } from "../../traffic";
-import { COLORS } from "../../theme";
+import { sidewalkMaterialFor } from "../../textures";
+import { buildCrosswalks } from "../../crosswalk";
+import { CROSSWALK_BRICK } from "../../theme";
 
 const SIDEWALK_WIDTH = 0.7;
 
-// Tileable canvas-generated brick texture (no image assets).
-function makeBrickTexture(): CanvasTexture {
-  const canvas = document.createElement("canvas");
-  const w = 96;
-  const h = 48;
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = COLORS.mortar;
-  ctx.fillRect(0, 0, w, h);
-  const rows = 2;
-  const cols = 3;
-  const brickH = h / rows;
-  const brickW = w / cols;
-  const mortar = 3;
-  ctx.fillStyle = COLORS.brick;
-  for (let r = 0; r < rows; r++) {
-    const y = r * brickH;
-    const off = r % 2 === 0 ? 0 : brickW / 2;
-    for (let c = 0; c < cols; c++) {
-      const x = c * brickW + off;
-      ctx.fillRect(x, y + mortar / 2, brickW - mortar, brickH - mortar);
-    }
-  }
-  const tex = new CanvasTexture(canvas);
-  tex.wrapS = RepeatWrapping;
-  tex.wrapT = RepeatWrapping;
-  return tex;
-}
+const CROSSWALK_MATERIAL = new MeshStandardMaterial({ color: CROSSWALK_BRICK, roughness: 1 });
 
 interface SidewalkRect {
   x: number;
@@ -65,27 +39,14 @@ export function Sidewalks({
   }, [streets]);
 
   const sidewalkMaterials = useMemo(
-    () =>
-      sidewalks.map((sw) => {
-        const tex = makeBrickTexture();
-        tex.repeat.set(Math.max(1, sw.w / 1.6), Math.max(1, sw.d / 0.8));
-        tex.needsUpdate = true;
-        return new MeshStandardMaterial({ map: tex, roughness: 1 });
-      }),
+    () => sidewalks.map((sw) => sidewalkMaterialFor(sw.w, sw.d)),
     [sidewalks],
   );
 
-  const crosswalks = useMemo(() => {
-    const out: SidewalkRect[] = [];
-    for (const it of intersections) {
-      const avenue = streets.find((s) => s.width >= s.depth && Math.abs(s.z - it.z) < 0.01);
-      if (!avenue) continue;
-      for (let i = -1; i <= 2; i++) {
-        out.push({ x: it.x + i * 0.5 - 0.15, z: it.z, w: 0.4, d: avenue.depth });
-      }
-    }
-    return out;
-  }, [intersections, streets]);
+  const crosswalks = useMemo(
+    () => buildCrosswalks(intersections, streets),
+    [intersections, streets],
+  );
 
   return (
     <group>
@@ -95,9 +56,13 @@ export function Sidewalks({
         </mesh>
       ))}
       {crosswalks.map((c, i) => (
-        <mesh key={i} position={[c.x, -0.041, c.z]} rotation-x={-Math.PI / 2}>
+        <mesh
+          key={`cs${i}`}
+          position={[c.x, -0.041, c.z]}
+          rotation-x={-Math.PI / 2}
+          material={CROSSWALK_MATERIAL}
+        >
           <planeGeometry args={[c.w, c.d]} />
-          <meshStandardMaterial color={COLORS.crosswalk} />
         </mesh>
       ))}
     </group>

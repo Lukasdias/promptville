@@ -1,7 +1,11 @@
 import type { ReactNode } from "react";
 import { animated, useSpring } from "@react-spring/web";
+import { ExternalLink, X } from "lucide-react";
+import { Tooltip } from "../ui/Tooltip";
 import { useApp } from "../../store";
 import { BUILDING_META } from "../../civic";
+import { openCommand } from "../../navigator";
+import { useSession } from "../../query";
 
 export function DetailCard() {
   const selected = useApp((s) => s.selected);
@@ -9,6 +13,8 @@ export function DetailCard() {
   const activity = useApp((s) => s.activity);
   const clearSelection = useApp((s) => s.clearSelection);
   const showDetailCard = useApp((s) => s.tweaks.showDetailCard);
+  const pushToast = useApp((s) => s.pushToast);
+  const { data: detail } = useSession(selected?.id ?? null);
 
   const show = Boolean(selected || selectedBuilding);
 
@@ -26,10 +32,11 @@ export function DetailCard() {
   if (selectedBuilding) {
     const meta = BUILDING_META[selectedBuilding];
     const a = activity[selectedBuilding];
+    const Icon = meta.icon;
     body = (
       <>
-        <h2 className="pr-8 font-display text-lg font-semibold leading-snug">
-          {meta.emoji} {meta.name}
+        <h2 className="flex items-center gap-2 pr-8 font-display text-lg font-semibold leading-snug">
+          <Icon size={18} /> {meta.name}
         </h2>
         <dl className="mt-2 space-y-1 text-sm">
           <Row k="Services" v={meta.services.join(" · ")} />
@@ -65,6 +72,23 @@ export function DetailCard() {
           />
           <Row k="Date" v={date} />
         </dl>
+        {detail?.snippet && (
+          <p className="mt-2 text-xs leading-snug opacity-70">{detail.snippet}</p>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            if (!selected) return;
+            const cmd = openCommand(selected);
+            navigator.clipboard.writeText(cmd).then(
+              () => pushToast("success", `Copied: ${cmd}`),
+              () => pushToast("error", "Could not copy command"),
+            );
+          }}
+          className="mt-3 flex items-center justify-center gap-1.5 w-full rounded-lg border-2 border-ink/40 bg-cream py-1.5 font-display text-sm font-semibold hover:bg-ink/10"
+        >
+          Open in opencode <ExternalLink size={14} />
+        </button>
       </>
     );
   } else {
@@ -76,13 +100,15 @@ export function DetailCard() {
       className="paper-card absolute bottom-16 left-1/2 w-80 p-4 font-body text-ink"
       style={{ opacity: spring.opacity, transform: spring.transform }}
     >
-      <button
-        onClick={clearSelection}
-        className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full border-2 border-ink/50 text-sm hover:bg-ink/10"
-        aria-label="Close"
-      >
-        ✕
-      </button>
+      <Tooltip label="Close">
+        <button
+          onClick={clearSelection}
+          className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full border-2 border-ink/50 text-sm hover:bg-ink/10"
+          aria-label="Close"
+        >
+          <X size={16} />
+        </button>
+      </Tooltip>
       {body}
     </animated.div>
   );

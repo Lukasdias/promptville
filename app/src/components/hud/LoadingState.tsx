@@ -1,4 +1,5 @@
 import { animated, useSpring } from "@react-spring/web";
+import { Construction } from "lucide-react";
 import { useNeighborhood } from "../../query";
 
 export function LoadingState() {
@@ -22,9 +23,9 @@ export function LoadingState() {
       <animated.div className="paper-card p-6 text-center font-body text-ink" style={{ opacity }}>
         <animated.div
           style={{ transform: scale.to((s) => `scale(${s})`) }}
-          className="text-5xl"
+          className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-[3px] border-ink bg-amber-300 text-ink"
         >
-          🏗️
+          <Construction size={34} />
         </animated.div>
         <h2 className="mt-3 font-display text-2xl font-semibold">Building Promptville…</h2>
         <p className="mt-1 text-sm opacity-70">Houses are popping up across town.</p>
