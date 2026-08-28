@@ -39,6 +39,14 @@ const GROUPS: { title: string; rows: Row[] }[] = [
     ],
   },
   {
+    title: "Navigate",
+    rows: [
+      { keys: ["L"], label: "Toggle session list" },
+      { keys: ["/"], label: "Search sessions" },
+      { keys: ["Click"], label: "Select a session" },
+    ],
+  },
+  {
     title: "General",
     rows: [
       { keys: ["P"], label: "Tweak display" },

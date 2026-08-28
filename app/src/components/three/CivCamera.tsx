@@ -31,7 +31,7 @@ const FIT_SCALE = 0.9;
 
 const HANDLED_KEYS = new Set([
   "w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright",
-  "q", "e", "r", "+", "-", "f", "home", "escape", "tab", "m", "p",
+  "q", "e", "r", "+", "-", "f", "home", "escape", "tab", "m", "p", "l", "/",
 ]);
 
 export function CivCamera() {
@@ -44,6 +44,8 @@ export function CivCamera() {
   const tweaksOpen = useApp((s) => s.tweaksOpen);
   const toggleTweaks = useApp((s) => s.toggleTweaks);
   const clearSelection = useApp((s) => s.clearSelection);
+  const toggleNavigator = useApp((s) => s.toggleNavigator);
+  const focusSearch = useApp((s) => s.focusSearch);
 
   const { data } = useNeighborhood();
   const projects = data?.projects ?? [];
@@ -87,6 +89,8 @@ export function CivCamera() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (document.activeElement as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
       const k = e.key.toLowerCase();
       if (!HANDLED_KEYS.has(k)) return;
       e.preventDefault();
@@ -117,6 +121,10 @@ export function CivCamera() {
         else clearSelection();
       } else if (k === "m") {
         edgeScroll.current = !edgeScroll.current;
+      } else if (k === "l") {
+        toggleNavigator();
+      } else if (k === "/") {
+        focusSearch();
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
@@ -128,7 +136,7 @@ export function CivCamera() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [gl, blocks, projects, toggleHelp, toggleTweaks, clearSelection]);
+  }, [gl, blocks, projects, toggleHelp, toggleTweaks, clearSelection, toggleNavigator, focusSearch]);
 
   useEffect(() => {
     const el = gl.domElement;

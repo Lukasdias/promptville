@@ -3,6 +3,7 @@ import { useApp } from "../../store";
 
 export function Header() {
   const toggleTweaks = useApp((s) => s.toggleTweaks);
+  const toggleNavigator = useApp((s) => s.toggleNavigator);
   const showHeader = useApp((s) => s.tweaks.showHeader);
   const { opacity, y } = useSpring({
     from: { opacity: 0, y: -18 },
@@ -23,6 +24,14 @@ export function Header() {
       <h1 className="font-display text-3xl font-semibold tracking-tight text-ink drop-shadow-[2px_2px_0_rgba(255,255,255,0.8)]">
         Promptville
       </h1>
+      <button
+        type="button"
+        onClick={toggleNavigator}
+        aria-label="Toggle session navigator"
+        className="pointer-events-auto ml-1 grid h-10 w-10 place-items-center rounded-full border-[3px] border-ink bg-cream text-lg transition-colors hover:bg-ink/10"
+      >
+        🗺️
+      </button>
       <button
         type="button"
         onClick={toggleTweaks}
