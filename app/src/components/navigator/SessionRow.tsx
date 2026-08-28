@@ -1,3 +1,4 @@
+import { ExternalLink } from "lucide-react";
 import { useSession } from "../../query";
 import { openCommand } from "../../navigator";
 import { useApp } from "../../store";
@@ -50,10 +51,10 @@ export function SessionRow({ item, active }: { item: NavItem; active: boolean })
             e.stopPropagation();
             copy();
           }}
-          className="grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 border-ink/40 text-xs hover:bg-ink/10"
+          className="grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 border-ink/40 text-ink hover:bg-ink/10"
           aria-label="Open in opencode"
         >
-          ↗
+          <ExternalLink size={13} />
         </button>
       </div>
       {active && data?.snippet && (

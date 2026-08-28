@@ -1,10 +1,12 @@
 import { animated, useSpring } from "@react-spring/web";
+import { CircleCheck, Info, TriangleAlert } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useApp, type Toast } from "../../store";
 
-const KIND_STYLE: Record<Toast["kind"], { border: string; emoji: string }> = {
-  info: { border: "#4a4453", emoji: "🧭" },
-  success: { border: "#2e8b57", emoji: "✅" },
-  error: { border: "#c0392b", emoji: "⚠️" },
+const KIND_STYLE: Record<Toast["kind"], { border: string; icon: LucideIcon }> = {
+  info: { border: "#4a4453", icon: Info },
+  success: { border: "#2e8b57", icon: CircleCheck },
+  error: { border: "#c0392b", icon: TriangleAlert },
 };
 
 export function Toasts() {
@@ -27,14 +29,15 @@ function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
     config: { tension: 280, friction: 22 },
   });
   const s = KIND_STYLE[toast.kind];
+  const Icon = s.icon;
   return (
     <animated.button
       type="button"
       onClick={onDismiss}
-      className="paper-card pointer-events-auto flex w-auto items-center gap-2 px-4 py-2 font-body text-sm font-bold text-ink"
+      className="paper-card pointer-events-auto flex items-center gap-2 px-4 py-2 font-body text-sm font-bold text-ink"
       style={{ opacity: spring.opacity, transform: spring.transform, border: `3px solid ${s.border}` }}
     >
-      <span className="text-base">{s.emoji}</span>
+      <Icon size={16} />
       <span>{toast.message}</span>
     </animated.button>
   );

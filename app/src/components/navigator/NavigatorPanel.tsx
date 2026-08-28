@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { animated, useSpring } from "@react-spring/web";
+import { RotateCcw } from "lucide-react";
 import { useNeighborhood } from "../../query";
 import { filterNavItems, groupByDay, sortNavItems } from "../../navigator";
 import { useApp } from "../../store";
@@ -83,10 +84,10 @@ export function NavigatorPanel() {
           <button
             type="button"
             onClick={resetFilters}
-            className="rounded-lg border-2 border-ink/40 px-2 py-1.5 text-xs hover:bg-ink/10"
+            className="grid h-8 w-8 place-items-center rounded-lg border-2 border-ink/40 text-ink hover:bg-ink/10"
             aria-label="Reset filters"
           >
-            ↺
+            <RotateCcw size={14} />
           </button>
         </div>
 

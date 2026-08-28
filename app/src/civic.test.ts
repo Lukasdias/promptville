@@ -114,7 +114,7 @@ describe("layoutCivicDistrict", () => {
   test("metadata covers every kind", () => {
     for (const kind of civic.lots.map((l) => l.kind)) {
       expect(BUILDING_META[kind].name.length).toBeGreaterThan(0);
-      expect(BUILDING_META[kind].emoji).toBeTruthy();
+      expect(BUILDING_META[kind].icon).toBeTruthy();
       expect(BUILDING_LAYOUT[kind].walls).toBeGreaterThan(1);
     }
   });

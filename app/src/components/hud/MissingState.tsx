@@ -1,4 +1,5 @@
 import { animated, useSpring } from "@react-spring/web";
+import { MapPinOff } from "lucide-react";
 import { useNeighborhood } from "../../query";
 
 export function MissingState() {
@@ -22,7 +23,9 @@ export function MissingState() {
           top: "50%",
         }}
       >
-        <div className="text-4xl">🗺️</div>
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-[3px] border-ink bg-amber-300 text-ink">
+          <MapPinOff size={32} />
+        </div>
         <h2 className="mt-2 font-display text-2xl font-semibold">Map not found</h2>
         <p className="mt-2 text-sm opacity-80">
           Promptville couldn't read the opencode database.

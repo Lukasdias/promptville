@@ -42,7 +42,7 @@ export function LegendCard() {
                   style={{ background: BUILDING_COLORS[kind as keyof typeof BUILDING_COLORS].body }}
                 />
                 <span className="truncate">
-                  {meta.emoji} {meta.name}
+                  <meta.icon size={12} className="inline" /> {meta.name}
                 </span>
               </li>
             ))}

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { animated, useSpring } from "@react-spring/web";
+import { ExternalLink } from "lucide-react";
 import { useApp } from "../../store";
 import { BUILDING_META } from "../../civic";
 import { openCommand } from "../../navigator";
@@ -30,10 +31,11 @@ export function DetailCard() {
   if (selectedBuilding) {
     const meta = BUILDING_META[selectedBuilding];
     const a = activity[selectedBuilding];
+    const Icon = meta.icon;
     body = (
       <>
-        <h2 className="pr-8 font-display text-lg font-semibold leading-snug">
-          {meta.emoji} {meta.name}
+        <h2 className="flex items-center gap-2 pr-8 font-display text-lg font-semibold leading-snug">
+          <Icon size={18} /> {meta.name}
         </h2>
         <dl className="mt-2 space-y-1 text-sm">
           <Row k="Services" v={meta.services.join(" · ")} />
@@ -82,9 +84,9 @@ export function DetailCard() {
               () => pushToast("error", "Could not copy command"),
             );
           }}
-          className="mt-3 w-full rounded-lg border-2 border-ink/40 bg-cream py-1.5 font-display text-sm font-semibold hover:bg-ink/10"
+          className="mt-3 flex items-center justify-center gap-1.5 w-full rounded-lg border-2 border-ink/40 bg-cream py-1.5 font-display text-sm font-semibold hover:bg-ink/10"
         >
-          Open in opencode ↗
+          Open in opencode <ExternalLink size={14} />
         </button>
       </>
     );
