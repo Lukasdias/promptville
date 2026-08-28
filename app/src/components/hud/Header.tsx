@@ -31,7 +31,7 @@ export function Header() {
           type="button"
           onClick={toggleNavigator}
           aria-label="Toggle session navigator"
-          className="pointer-events-auto ml-1 grid h-10 w-10 place-items-center rounded-full border-[3px] border-ink bg-cream text-ink transition-colors hover:bg-ink/10"
+          className="pointer-events-auto ml-1 grid h-10 w-10 place-items-center rounded-full border-[3px] border-ink bg-cream text-ink transition-all duration-150 hover:-translate-y-0.5 hover:bg-amber-200 hover:shadow-[4px_4px_0_rgba(74,68,83,0.4)] active:translate-y-0 active:shadow-[1px_1px_0_rgba(74,68,83,0.4)]"
         >
           <List size={20} />
         </button>
@@ -41,7 +41,7 @@ export function Header() {
           type="button"
           onClick={toggleTweaks}
           aria-label="Tweak display"
-          className="pointer-events-auto ml-1 grid h-10 w-10 place-items-center rounded-full border-[3px] border-ink bg-cream text-ink transition-colors hover:bg-ink/10"
+          className="pointer-events-auto ml-1 grid h-10 w-10 place-items-center rounded-full border-[3px] border-ink bg-cream text-ink transition-all duration-150 hover:-translate-y-0.5 hover:bg-amber-200 hover:shadow-[4px_4px_0_rgba(74,68,83,0.4)] active:translate-y-0 active:shadow-[1px_1px_0_rgba(74,68,83,0.4)]"
         >
           <Settings size={20} />
         </button>

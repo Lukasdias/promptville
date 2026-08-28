@@ -34,7 +34,7 @@ export function SessionRow({ item, active }: { item: NavItem; active: boolean })
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="truncate font-display text-sm font-semibold leading-tight">
+          <div className="min-w-0 break-words font-display text-sm font-semibold leading-tight">
             {session.title}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs opacity-70">

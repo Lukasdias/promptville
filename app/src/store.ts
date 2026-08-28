@@ -104,14 +104,16 @@ export const useApp = create<AppState>()(
       helpOpen: false,
       toggleHelp: () => set((s) => ({ helpOpen: !s.helpOpen })),
       tweaksOpen: false,
-      toggleTweaks: () => set((s) => ({ tweaksOpen: !s.tweaksOpen })),
+      toggleTweaks: () =>
+        set((s) => ({ tweaksOpen: !s.tweaksOpen, navigatorOpen: s.tweaksOpen ? s.navigatorOpen : false })),
       tweaks: DEFAULT_TWEAKS,
       setTweak: (key, value) => set((s) => ({ tweaks: { ...s.tweaks, [key]: value } })),
       setStatsRow: (key, value) =>
         set((s) => ({ tweaks: { ...s.tweaks, statsRows: { ...s.tweaks.statsRows, [key]: value } } })),
       resetTweaks: () => set({ tweaks: DEFAULT_TWEAKS }),
       navigatorOpen: false,
-      toggleNavigator: () => set((s) => ({ navigatorOpen: !s.navigatorOpen })),
+      toggleNavigator: () =>
+        set((s) => ({ navigatorOpen: !s.navigatorOpen, tweaksOpen: s.navigatorOpen ? s.tweaksOpen : false })),
       search: "",
       setSearch: (v) => set({ search: v }),
       filters: EMPTY_FILTERS,
@@ -120,7 +122,8 @@ export const useApp = create<AppState>()(
       sortKey: "timeUpdated",
       setSortKey: (k) => set({ sortKey: k }),
       searchFocusNonce: 0,
-      focusSearch: () => set((s) => ({ navigatorOpen: true, searchFocusNonce: s.searchFocusNonce + 1 })),
+      focusSearch: () =>
+        set((s) => ({ navigatorOpen: true, tweaksOpen: false, searchFocusNonce: s.searchFocusNonce + 1 })),
       toasts: [],
       pushToast: (kind, message) => {
         const id = Date.now() + Math.random();

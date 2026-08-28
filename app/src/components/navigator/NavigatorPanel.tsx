@@ -83,7 +83,7 @@ export function NavigatorPanel() {
 
   return (
     <animated.aside
-      className="absolute left-4 top-20 bottom-16 z-30 flex w-80 flex-col"
+      className="absolute left-4 top-20 bottom-16 z-30 flex w-fit min-w-[19rem] max-w-[28rem] flex-col"
       style={{ opacity, transform: x.to((v) => `translateX(${v}px)`) }}
     >
       <div className="paper-card flex min-h-0 flex-1 flex-col overflow-hidden p-3 font-body text-ink">
