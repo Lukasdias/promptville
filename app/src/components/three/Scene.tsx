@@ -2,6 +2,7 @@ import { useCity } from "../../city";
 import { useActivityPump } from "../../activity";
 import { Ground } from "./Ground";
 import { Terrain } from "./Terrain";
+import { Streets } from "./Streets";
 import { City } from "./City";
 import { World } from "./World";
 import { Details } from "./Details";
@@ -47,7 +48,8 @@ export function Scene() {
         shadow-camera-bottom={-45}
       />
       <Terrain extent={extent} bounds={bounds} />
-      <Ground blocks={blocks} streets={renderStreets} />
+      <Ground blocks={blocks} />
+      <Streets streets={renderStreets} />
       <Sidewalks streets={renderStreets} intersections={crosswalkIntersections} />
       <City />
       <World blocks={blocks} streets={renderStreets} />
