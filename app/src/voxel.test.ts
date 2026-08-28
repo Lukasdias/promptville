@@ -41,6 +41,9 @@ import {
   HYDRANT_COLOR,
   CONE_COLOR,
 } from "./voxel";
+import { COLORS } from "./theme";
+import { streetSidewalkVoxels, SIDEWALK_SIZE } from "./voxel";
+import type { Street } from "./layout";
 
 describe("houseVoxels", () => {
   const voxels = houseVoxels({ body: "#ffb3ba", roof: "#ff7f50", walls: 4, chimney: true });
@@ -275,5 +278,54 @@ describe("publicBuildingVoxels", () => {
     const { footprint, walls } = BUILDING_LAYOUT.petshop;
     const voxels = publicBuildingVoxels({ kind: "petshop", body: c.body, accent: c.accent, roof: c.roof, walls, width: footprint, depth: footprint });
     expect(voxels.some((v) => v.color === c.accent && v.y === 2)).toBe(true);
+  });
+});
+
+describe("streetSidewalkVoxels", () => {
+  const horizontal: Street = { x: 0, z: 0, width: 8, depth: 3.5 };
+  const vertical: Street = { x: 0, z: 0, width: 3.5, depth: 8 };
+
+  test("emits ground-level sidewalk cells around a street", () => {
+    const v = streetSidewalkVoxels([horizontal]);
+    expect(v.length).toBeGreaterThan(0);
+    expect(v.some((c) => c.y === 0)).toBe(true);
+  });
+
+  test("no sidewalk cell lands inside the asphalt band of its own street", () => {
+    const v = streetSidewalkVoxels([horizontal]);
+    for (const c of v) {
+      const wz = (c.z + 0.5) * SIDEWALK_SIZE;
+      expect(Math.abs(wz) > horizontal.depth / 2).toBe(true);
+    }
+  });
+
+  test("vertical street flanks on the x axis", () => {
+    const v = streetSidewalkVoxels([vertical]);
+    for (const c of v) {
+      const wx = (c.x + 0.5) * SIDEWALK_SIZE;
+      expect(Math.abs(wx) > vertical.width / 2).toBe(true);
+    }
+  });
+
+  test("curb cells are the street-facing row, walk cells outside", () => {
+    const v = streetSidewalkVoxels([horizontal]);
+    const near = v.filter((c) => c.color === COLORS.curb);
+    const far = v.filter((c) => c.color === COLORS.brick);
+    const nearMin = Math.min(...near.map((c) => Math.abs((c.z + 0.5) * SIDEWALK_SIZE)));
+    const farMin = Math.min(...far.map((c) => Math.abs((c.z + 0.5) * SIDEWALK_SIZE)));
+    expect(nearMin).toBeCloseTo(horizontal.depth / 2 + SIDEWALK_SIZE / 2, 1);
+    expect(farMin).toBeGreaterThan(nearMin);
+  });
+
+  test("culls sidewalk cells covered by a crossing street's road", () => {
+    const crossing: Street = { x: 0, z: 0, width: 3.5, depth: 12 };
+    const v = streetSidewalkVoxels([horizontal, crossing]);
+    for (const c of v) {
+      const wx = (c.x + 0.5) * SIDEWALK_SIZE;
+      const wz = (c.z + 0.5) * SIDEWALK_SIZE;
+      const inHorizontal = Math.abs(wz) < horizontal.depth / 2;
+      const inVertical = Math.abs(wx) < crossing.width / 2;
+      expect(inHorizontal && inVertical).toBe(false);
+    }
   });
 });
