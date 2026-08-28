@@ -1,0 +1,146 @@
+import { useEffect, useMemo, useRef } from "react";
+import { animated, useSpring } from "@react-spring/web";
+import { useNeighborhood } from "../../query";
+import { filterNavItems, groupByDay, sortNavItems } from "../../navigator";
+import { useApp } from "../../store";
+import { SessionRow } from "./SessionRow";
+
+export function NavigatorPanel() {
+  const open = useApp((s) => s.navigatorOpen);
+  const search = useApp((s) => s.search);
+  const setSearch = useApp((s) => s.setSearch);
+  const filters = useApp((s) => s.filters);
+  const setFilter = useApp((s) => s.setFilter);
+  const resetFilters = useApp((s) => s.resetFilters);
+  const sortKey = useApp((s) => s.sortKey);
+  const setSortKey = useApp((s) => s.setSortKey);
+  const selected = useApp((s) => s.selected);
+  const focusNonce = useApp((s) => s.searchFocusNonce);
+  const { data } = useNeighborhood();
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open && focusNonce > 0) inputRef.current?.focus();
+  }, [open, focusNonce]);
+
+  const items = useMemo(() => {
+    const projects = data?.projects ?? [];
+    const filtered = filterNavItems(projects, search, filters);
+    return sortNavItems(filtered, sortKey);
+  }, [data, search, filters, sortKey]);
+
+  const groups = useMemo(() => groupByDay(items), [items]);
+
+  const possibleModels = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of data?.projects ?? []) for (const s of p.sessions) if (s.model) set.add(s.model);
+    return [...set].sort();
+  }, [data]);
+
+  const possibleAgents = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of data?.projects ?? []) for (const s of p.sessions) if (s.agent) set.add(s.agent);
+    return [...set].sort();
+  }, [data]);
+
+  const { opacity, x } = useSpring({
+    from: { opacity: 0, x: -40 },
+    to: { opacity: open ? 1 : 0, x: open ? 0 : -60 },
+    config: { tension: 240, friction: 24 },
+  });
+
+  if (!open) return null;
+
+  const sumTokens = (arr: typeof items) =>
+    arr.reduce((a, i) => a + i.session.tokensIn + i.session.tokensOut, 0);
+  const sumCost = (arr: typeof items) => arr.reduce((a, i) => a + i.session.cost, 0);
+
+  return (
+    <animated.aside
+      className="absolute left-4 top-20 bottom-16 z-30 flex w-80 flex-col"
+      style={{ opacity, transform: x.to((v) => `translateX(${v}px)`) }}
+    >
+      <div className="paper-card flex min-h-0 flex-1 flex-col overflow-hidden p-3 font-body text-ink">
+        <div className="flex items-center gap-2">
+          <input
+            ref={inputRef}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search sessions…"
+            className="flex-1 rounded-lg border-2 border-ink/40 bg-cream px-3 py-1.5 font-body text-sm outline-none focus:border-ink"
+          />
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as typeof sortKey)}
+            className="rounded-lg border-2 border-ink/40 bg-cream px-2 py-1.5 text-xs"
+          >
+            <option value="timeUpdated">Newest</option>
+            <option value="cost">Cost</option>
+            <option value="tokens">Tokens</option>
+            <option value="title">Title</option>
+          </select>
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="rounded-lg border-2 border-ink/40 px-2 py-1.5 text-xs hover:bg-ink/10"
+            aria-label="Reset filters"
+          >
+            ↺
+          </button>
+        </div>
+
+        <div className="mt-2 flex flex-wrap gap-1 text-xs">
+          <select
+            multiple
+            value={filters.projects}
+            onChange={(e) => setFilter("projects", [...e.target.selectedOptions].map((o) => o.value))}
+            className="min-w-24 rounded-lg border-2 border-ink/40 bg-cream px-1 py-1"
+          >
+            <option value="" disabled>Projects</option>
+            {(data?.projects ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <select
+            multiple
+            value={filters.models}
+            onChange={(e) => setFilter("models", [...e.target.selectedOptions].map((o) => o.value))}
+            className="min-w-24 rounded-lg border-2 border-ink/40 bg-cream px-1 py-1"
+          >
+            <option value="" disabled>Models</option>
+            {possibleModels.map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+          <select
+            multiple
+            value={filters.agents}
+            onChange={(e) => setFilter("agents", [...e.target.selectedOptions].map((o) => o.value))}
+            className="min-w-24 rounded-lg border-2 border-ink/40 bg-cream px-1 py-1"
+          >
+            <option value="" disabled>Agents</option>
+            {possibleAgents.map((a) => <option key={a} value={a}>{a}</option>)}
+          </select>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between text-xs opacity-70">
+          <span>{items.length} sessions</span>
+          <span>${sumCost(items).toFixed(2)} · {sumTokens(items).toLocaleString()} tok</span>
+        </div>
+
+        <div className="mt-2 flex-1 space-y-3 overflow-y-auto pr-1">
+          {groups.length === 0 && (
+            <p className="py-8 text-center text-sm opacity-60">No sessions match.</p>
+          )}
+          {groups.map((g) => (
+            <div key={g.day}>
+              <div className="mb-1 text-[11px] font-bold uppercase tracking-wide opacity-50">{g.label}</div>
+              <div className="space-y-1.5">
+                {g.items.map((item) => (
+                  <SessionRow key={item.session.id} item={item} active={selected?.id === item.session.id} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </animated.aside>
+  );
+}

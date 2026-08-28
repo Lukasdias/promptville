@@ -11,6 +11,7 @@ import { LegendCard } from "./components/hud/LegendCard";
 import { LoadingState } from "./components/hud/LoadingState";
 import { MissingState } from "./components/hud/MissingState";
 import { Toasts } from "./components/hud/Toasts";
+import { NavigatorPanel } from "./components/navigator/NavigatorPanel";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
         <CivCamera />
       </Canvas>
       <Header />
+      <NavigatorPanel />
       <StatsPanel />
       <DetailCard />
       <HintBar />
