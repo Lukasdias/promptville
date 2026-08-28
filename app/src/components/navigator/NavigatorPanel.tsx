@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { animated, useSpring } from "@react-spring/web";
 import { RotateCcw } from "lucide-react";
+import { Tooltip } from "../ui/Tooltip";
 import { useNeighborhood } from "../../query";
-import { filterNavItems, groupByDay, sortNavItems } from "../../navigator";
+import { filterNavItems, groupByDay, sortNavItems, type NavItem } from "../../navigator";
 import { useApp } from "../../store";
 import { SessionRow } from "./SessionRow";
+
+type Row =
+  | { kind: "day"; key: string; label: string }
+  | { kind: "session"; key: string; item: NavItem };
 
 export function NavigatorPanel() {
   const open = useApp((s) => s.navigatorOpen);
@@ -20,6 +26,7 @@ export function NavigatorPanel() {
   const { data } = useNeighborhood();
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open && focusNonce > 0) inputRef.current?.focus();
@@ -32,6 +39,23 @@ export function NavigatorPanel() {
   }, [data, search, filters, sortKey]);
 
   const groups = useMemo(() => groupByDay(items), [items]);
+
+  const rows = useMemo<Row[]>(() => {
+    const out: Row[] = [];
+    for (const g of groups) {
+      out.push({ kind: "day", key: `day-${g.day}`, label: g.label });
+      for (const item of g.items) out.push({ kind: "session", key: item.session.id, item });
+    }
+    return out;
+  }, [groups]);
+
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => listRef.current,
+    estimateSize: (i) => (rows[i]?.kind === "day" ? 24 : 62),
+    overscan: 10,
+    getItemKey: (i) => rows[i]?.key ?? i,
+  });
 
   const possibleModels = useMemo(() => {
     const set = new Set<string>();
@@ -81,14 +105,16 @@ export function NavigatorPanel() {
             <option value="tokens">Tokens</option>
             <option value="title">Title</option>
           </select>
-          <button
-            type="button"
-            onClick={resetFilters}
-            className="grid h-8 w-8 place-items-center rounded-lg border-2 border-ink/40 text-ink hover:bg-ink/10"
-            aria-label="Reset filters"
-          >
-            <RotateCcw size={14} />
-          </button>
+          <Tooltip label="Reset filters">
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="grid h-8 w-8 place-items-center rounded-lg border-2 border-ink/40 text-ink hover:bg-ink/10"
+              aria-label="Reset filters"
+            >
+              <RotateCcw size={14} />
+            </button>
+          </Tooltip>
         </div>
 
         <div className="mt-2 flex flex-wrap gap-1 text-xs">
@@ -126,20 +152,39 @@ export function NavigatorPanel() {
           <span>${sumCost(items).toFixed(2)} · {sumTokens(items).toLocaleString()} tok</span>
         </div>
 
-        <div className="mt-2 flex-1 space-y-3 overflow-y-auto pr-1">
-          {groups.length === 0 && (
+        <div ref={listRef} className="mt-2 flex-1 overflow-y-auto pr-1">
+          {rows.length === 0 ? (
             <p className="py-8 text-center text-sm opacity-60">No sessions match.</p>
-          )}
-          {groups.map((g) => (
-            <div key={g.day}>
-              <div className="mb-1 text-[11px] font-bold uppercase tracking-wide opacity-50">{g.label}</div>
-              <div className="space-y-1.5">
-                {g.items.map((item) => (
-                  <SessionRow key={item.session.id} item={item} active={selected?.id === item.session.id} />
-                ))}
-              </div>
+          ) : (
+            <div style={{ height: virtualizer.getTotalSize(), width: "100%", position: "relative" }}>
+              {virtualizer.getVirtualItems().map((vi) => {
+                const row = rows[vi.index];
+                return (
+                  <div
+                    key={vi.key}
+                    data-index={vi.index}
+                    ref={virtualizer.measureElement}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${vi.start}px)`,
+                      paddingBottom: row.kind === "session" ? 6 : 2,
+                    }}
+                  >
+                    {row.kind === "day" ? (
+                      <div className="py-1 text-[11px] font-bold uppercase tracking-wide opacity-50">
+                        {row.label}
+                      </div>
+                    ) : (
+                      <SessionRow item={row.item} active={selected?.id === row.item.session.id} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          ))}
+          )}
         </div>
       </div>
     </animated.aside>

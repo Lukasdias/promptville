@@ -1,4 +1,5 @@
 import { ExternalLink } from "lucide-react";
+import { Tooltip } from "../ui/Tooltip";
 import { useSession } from "../../query";
 import { openCommand } from "../../navigator";
 import { useApp } from "../../store";
@@ -45,17 +46,19 @@ export function SessionRow({ item, active }: { item: NavItem; active: boolean })
             <span>· {tokens.toLocaleString()} tok</span>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            copy();
-          }}
-          className="grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 border-ink/40 text-ink hover:bg-ink/10"
-          aria-label="Open in opencode"
-        >
-          <ExternalLink size={13} />
-        </button>
+        <Tooltip label="Open in opencode">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              copy();
+            }}
+            className="grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 border-ink/40 text-ink hover:bg-ink/10"
+            aria-label="Open in opencode"
+          >
+            <ExternalLink size={13} />
+          </button>
+        </Tooltip>
       </div>
       {active && data?.snippet && (
         <p className="mt-1 line-clamp-2 text-xs opacity-70">{data.snippet}</p>

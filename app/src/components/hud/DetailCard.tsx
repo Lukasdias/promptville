@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { animated, useSpring } from "@react-spring/web";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, X } from "lucide-react";
+import { Tooltip } from "../ui/Tooltip";
 import { useApp } from "../../store";
 import { BUILDING_META } from "../../civic";
 import { openCommand } from "../../navigator";
@@ -99,13 +100,15 @@ export function DetailCard() {
       className="paper-card absolute bottom-16 left-1/2 w-80 p-4 font-body text-ink"
       style={{ opacity: spring.opacity, transform: spring.transform }}
     >
-      <button
-        onClick={clearSelection}
-        className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full border-2 border-ink/50 text-sm hover:bg-ink/10"
-        aria-label="Close"
-      >
-        ✕
-      </button>
+      <Tooltip label="Close">
+        <button
+          onClick={clearSelection}
+          className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full border-2 border-ink/50 text-sm hover:bg-ink/10"
+          aria-label="Close"
+        >
+          <X size={16} />
+        </button>
+      </Tooltip>
       {body}
     </animated.div>
   );

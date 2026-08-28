@@ -1,5 +1,6 @@
 import { animated, useSpring } from "@react-spring/web";
 import { List, Settings, Sun } from "lucide-react";
+import { Tooltip } from "../ui/Tooltip";
 import { useApp } from "../../store";
 
 export function Header() {
@@ -25,22 +26,26 @@ export function Header() {
       <h1 className="font-display text-3xl font-semibold tracking-tight text-ink drop-shadow-[2px_2px_0_rgba(255,255,255,0.8)]">
         Promptville
       </h1>
-      <button
-        type="button"
-        onClick={toggleNavigator}
-        aria-label="Toggle session navigator"
-        className="pointer-events-auto ml-1 grid h-10 w-10 place-items-center rounded-full border-[3px] border-ink bg-cream text-ink transition-colors hover:bg-ink/10"
-      >
-        <List size={20} />
-      </button>
-      <button
-        type="button"
-        onClick={toggleTweaks}
-        aria-label="Tweak display"
-        className="pointer-events-auto ml-1 grid h-10 w-10 place-items-center rounded-full border-[3px] border-ink bg-cream text-ink transition-colors hover:bg-ink/10"
-      >
-        <Settings size={20} />
-      </button>
+      <Tooltip label="Toggle session navigator (L)">
+        <button
+          type="button"
+          onClick={toggleNavigator}
+          aria-label="Toggle session navigator"
+          className="pointer-events-auto ml-1 grid h-10 w-10 place-items-center rounded-full border-[3px] border-ink bg-cream text-ink transition-colors hover:bg-ink/10"
+        >
+          <List size={20} />
+        </button>
+      </Tooltip>
+      <Tooltip label="Tweak display (P)">
+        <button
+          type="button"
+          onClick={toggleTweaks}
+          aria-label="Tweak display"
+          className="pointer-events-auto ml-1 grid h-10 w-10 place-items-center rounded-full border-[3px] border-ink bg-cream text-ink transition-colors hover:bg-ink/10"
+        >
+          <Settings size={20} />
+        </button>
+      </Tooltip>
     </animated.header>
   );
 }
