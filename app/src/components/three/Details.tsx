@@ -28,6 +28,21 @@ const FOUNTAIN_SIZE = 0.2;
 const HYDRANT_SIZE = 0.16;
 const CONE_SIZE = 0.16;
 
+const SCATTER_PAD = 0.7;
+const FLOWER_PAD = 0.8;
+const MAILBOX_PAD = 0.8;
+const HYDRANT_PAD = 0.6;
+const SCATTER_SCAN_LIMIT = 400;
+const SCATTER_EDGE_PAD = 8;
+const SIGN_CORNER_OFFSET = 0.9;
+const CONE_LATERAL_OFFSET = 0.55;
+const CONE_ROAD_INSET = 2;
+const CONE_STEP = 3;
+const PARK_FLOWER_OFFSET_1 = { x: 4.5, z: -4 };
+const PARK_FLOWER_OFFSET_2 = { x: -4, z: 3.5 };
+const BENCH_RADIUS = 4.2;
+const BENCH_ANGLES = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
+
 interface DetailSets {
   bushes: Voxel[];
   flowers: Voxel[];
@@ -49,12 +64,12 @@ export function Details({ blocks, streets }: { blocks: PlacedBlock[]; streets: S
     const { minX, maxX, minZ, maxZ } = bounds;
     const cx = (minX + maxX) / 2;
     const cz = (minZ + maxZ) / 2;
-    const spread = Math.max(maxX - minX, maxZ - minZ) / 2 + 8;
+    const spread = Math.max(maxX - minX, maxZ - minZ) / 2 + SCATTER_EDGE_PAD;
     const park = pickParkSpot(blocks, minX, maxX, minZ, maxZ);
 
     const placeScattered = (count: number, pad: number): { x: number; z: number }[] => {
       const out: { x: number; z: number }[] = [];
-      for (let i = 0; out.length < count && i < 400; i++) {
+      for (let i = 0; out.length < count && i < SCATTER_SCAN_LIMIT; i++) {
         const x = cx + (rand() - 0.5) * 2 * spread;
         const z = cz + (rand() - 0.5) * 2 * spread;
         if (!isClearSpot(x, z, blocks, streets, pad)) continue;
@@ -64,35 +79,39 @@ export function Details({ blocks, streets }: { blocks: PlacedBlock[]; streets: S
     };
 
     const bushes: Voxel[] = [];
-    for (const p of placeScattered(environment.bushes, 0.7)) {
+    for (const p of placeScattered(environment.bushes, SCATTER_PAD)) {
       for (const v of placeVoxels(bushVoxels(), p.x, p.z, BUSH_SIZE)) bushes.push(v);
     }
 
     const flowers: Voxel[] = [];
-    const flowerSpots = placeScattered(environment.flowers, 0.8);
-    if (park) flowerSpots.push({ x: park.x + 4.5, z: park.z - 4 }, { x: park.x - 4, z: park.z + 3.5 });
+    const flowerSpots = placeScattered(environment.flowers, FLOWER_PAD);
+    if (park) {
+      flowerSpots.push(
+        { x: park.x + PARK_FLOWER_OFFSET_1.x, z: park.z + PARK_FLOWER_OFFSET_1.z },
+        { x: park.x + PARK_FLOWER_OFFSET_2.x, z: park.z + PARK_FLOWER_OFFSET_2.z },
+      );
+    }
     for (const p of flowerSpots) {
       for (const v of placeVoxels(flowersVoxels(), p.x, p.z, FLOWER_SIZE)) flowers.push(v);
     }
 
     const mailboxes: Voxel[] = [];
-    for (const p of placeScattered(environment.mailboxes, 0.8)) {
+    for (const p of placeScattered(environment.mailboxes, MAILBOX_PAD)) {
       for (const v of placeVoxels(mailboxVoxels(), p.x, p.z, MAILBOX_SIZE)) mailboxes.push(v);
     }
 
     // Street-name signs at intersection corners, not in the middle of the road.
     const signs: Voxel[] = [];
     for (const it of findIntersections(streets)) {
-      const corner = { x: it.x + 0.9, z: it.z + 0.9 };
+      const corner = { x: it.x + SIGN_CORNER_OFFSET, z: it.z + SIGN_CORNER_OFFSET };
       for (const v of placeVoxels(signVoxels(), corner.x, corner.z, SIGN_SIZE)) signs.push(v);
     }
 
     const benches: Voxel[] = [];
     if (park) {
-      const angles = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
-      for (const a of angles) {
-        const bx = park.x + Math.cos(a) * 4.2;
-        const bz = park.z + Math.sin(a) * 4.2;
+      for (const a of BENCH_ANGLES) {
+        const bx = park.x + Math.cos(a) * BENCH_RADIUS;
+        const bz = park.z + Math.sin(a) * BENCH_RADIUS;
         for (const v of placeVoxels(benchVoxels(), bx, bz, BENCH_SIZE)) benches.push(v);
       }
     }
@@ -102,17 +121,16 @@ export function Details({ blocks, streets }: { blocks: PlacedBlock[]; streets: S
       : [];
 
     const hydrants: Voxel[] = [];
-    for (const p of placeScattered(environment.hydrants, 0.6)) {
+    for (const p of placeScattered(environment.hydrants, HYDRANT_PAD)) {
       for (const v of placeVoxels(hydrantVoxels(), p.x, p.z, HYDRANT_SIZE)) hydrants.push(v);
     }
 
     const cones: Voxel[] = [];
     for (let i = 0; i < environment.cones && streets.length > 0; i++) {
-      const s = streets[(i * 3) % streets.length]!;
+      const s = streets[(i * CONE_STEP) % streets.length]!;
       const horizontal = s.width >= s.depth;
-      const offset = 0.55;
-      const x = horizontal ? s.x + (rand() - 0.5) * (s.width - 2) : s.x + offset;
-      const z = horizontal ? s.z + offset : s.z + (rand() - 0.5) * (s.depth - 2);
+      const x = horizontal ? s.x + (rand() - 0.5) * (s.width - CONE_ROAD_INSET) : s.x + CONE_LATERAL_OFFSET;
+      const z = horizontal ? s.z + CONE_LATERAL_OFFSET : s.z + (rand() - 0.5) * (s.depth - CONE_ROAD_INSET);
       for (const v of placeVoxels(coneVoxels(), x, z, CONE_SIZE)) cones.push(v);
     }
 

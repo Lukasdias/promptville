@@ -19,10 +19,14 @@ const KIND_GEOMETRY: Record<HouseKind, { footprint: number; width: number }> = {
   skyscraper: { footprint: 5, width: 0.65 },
 };
 
+const SCALE_COTTAGE_MAX = 1.5;
+const SCALE_HOUSE_MAX = 3.2;
+const SCALE_MANSION_MAX = 5;
+
 function kindFor(scale: number): HouseKind {
-  if (scale < 1.5) return "cottage";
-  if (scale < 3.2) return "house";
-  if (scale < 5) return "mansion";
+  if (scale < SCALE_COTTAGE_MAX) return "cottage";
+  if (scale < SCALE_HOUSE_MAX) return "house";
+  if (scale < SCALE_MANSION_MAX) return "mansion";
   return "skyscraper";
 }
 
