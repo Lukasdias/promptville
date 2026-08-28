@@ -1,8 +1,11 @@
+import { useMemo } from "react";
 import type { PlacedBlock } from "../../layout";
 import { useApp } from "../../store";
 import { isPanActive } from "../../pan";
 import { pickParkSpot, PARK_RADIUS } from "../../placement";
-import { grassLotMaterial, parkMaterial, plazaMaterial } from "../../textures";
+import { grassLotMaterialFor, parkMaterialFor, plazaMaterialFor } from "../../textures";
+
+const SURFACE_Y = 0.01;
 
 export function Ground({ blocks }: { blocks: PlacedBlock[] }) {
   const clearSelection = useApp((s) => s.clearSelection);
@@ -12,24 +15,28 @@ export function Ground({ blocks }: { blocks: PlacedBlock[] }) {
     clearSelection();
   };
 
+  const park = useMemo(() => {
+    if (blocks.length === 0) return null;
+    const maxX = Math.max(...blocks.map((b) => b.x + b.width / 2)) + 8;
+    const maxZ = Math.max(...blocks.map((b) => b.z + b.depth / 2)) + 8;
+    const minX = Math.min(...blocks.map((b) => b.x - b.width / 2)) - 8;
+    const minZ = Math.min(...blocks.map((b) => b.z - b.depth / 2)) - 8;
+    return pickParkSpot(blocks, minX, maxX, minZ, maxZ);
+  }, [blocks]);
+
   if (blocks.length === 0) return null;
-  const maxX = Math.max(...blocks.map((b) => b.x + b.width / 2)) + 8;
-  const maxZ = Math.max(...blocks.map((b) => b.z + b.depth / 2)) + 8;
-  const minX = Math.min(...blocks.map((b) => b.x - b.width / 2)) - 8;
-  const minZ = Math.min(...blocks.map((b) => b.z - b.depth / 2)) - 8;
-  const park = pickParkSpot(blocks, minX, maxX, minZ, maxZ);
 
   return (
     <group>
-      {/* Grass lot under each block; the plaza cell renders as a cream pad with a water center */}
       {blocks.map((b) => {
         if (b.kind === "plaza") {
+          const mat = plazaMaterialFor(b.width + 0.4, b.depth + 0.4);
           return (
             <group key={b.projectId}>
-              <mesh position={[b.x, 0.06, b.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear} material={plazaMaterial}>
+              <mesh position={[b.x, SURFACE_Y, b.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear} material={mat}>
                 <planeGeometry args={[b.width + 0.4, b.depth + 0.4]} />
               </mesh>
-              <mesh position={[b.x, 0.065, b.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear}>
+              <mesh position={[b.x, SURFACE_Y + 0.005, b.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear}>
                 <circleGeometry args={[3, 24]} />
                 <meshStandardMaterial color="#7fc9ff" />
               </mesh>
@@ -39,20 +46,19 @@ export function Ground({ blocks }: { blocks: PlacedBlock[] }) {
         return (
           <mesh
             key={b.projectId}
-            position={[b.x, 0.06, b.z]}
+            position={[b.x, SURFACE_Y, b.z]}
             rotation-x={-Math.PI / 2}
             receiveShadow
             onClick={clear}
-            material={grassLotMaterial}
+            material={grassLotMaterialFor(b.width, b.depth)}
           >
-            <planeGeometry args={[b.width + 0.4, b.depth + 0.4]} />
+            <planeGeometry args={[b.width, b.depth]} />
           </mesh>
         );
       })}
 
-      {/* Park in a free corner */}
       {park && (
-        <mesh position={[park.x, 0.06, park.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear} material={parkMaterial}>
+        <mesh position={[park.x, SURFACE_Y, park.z]} rotation-x={-Math.PI / 2} receiveShadow onClick={clear} material={parkMaterialFor(PARK_RADIUS * 2)}>
           <circleGeometry args={[PARK_RADIUS, 24]} />
         </mesh>
       )}

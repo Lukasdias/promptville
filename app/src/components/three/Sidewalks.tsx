@@ -9,7 +9,13 @@ import { InstancedVoxels } from "./InstancedVoxels";
 import { useApp } from "../../store";
 import { isPanActive } from "../../pan";
 
-const CROSSWALK_MATERIAL = new MeshStandardMaterial({ color: CROSSWALK_BRICK, roughness: 1 });
+const CROSSWALK_MATERIAL = new MeshStandardMaterial({
+  color: CROSSWALK_BRICK,
+  roughness: 1,
+  polygonOffset: true,
+  polygonOffsetFactor: -1,
+  polygonOffsetUnits: -1,
+});
 
 export function Sidewalks({
   streets,
@@ -37,7 +43,7 @@ export function Sidewalks({
       {crosswalks.map((c, i) => (
         <mesh
           key={`cs${i}`}
-          position={[c.x, 0.075, c.z]}
+          position={[c.x, 0.055, c.z]}
           rotation-x={-Math.PI / 2}
           material={CROSSWALK_MATERIAL}
           onClick={clear}
