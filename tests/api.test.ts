@@ -60,4 +60,11 @@ describe("createHandler", () => {
   test("sessionDetail returns null for unknown id", () => {
     expect(sessionDetail(makeFixture(), "nope")).toBeNull();
   });
+
+  test("GET /api/session/:id returns 404 for unknown session", async () => {
+    const handler = createHandler(() => makeFixture());
+    const res = await handler(new Request("http://localhost/api/session/does-not-exist"));
+    expect(res.status).toBe(404);
+    expect((await res.json()).error).toBe("not found");
+  });
 });
