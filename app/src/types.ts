@@ -7,6 +7,14 @@ export interface SessionData {
   tokensIn: number;
   tokensOut: number;
   timeCreated: number;
+  timeUpdated: number;
+  slug: string;
+  directory: string;
+  parentId: string | null;
+}
+
+export interface SessionDetail extends SessionData {
+  snippet: string;
 }
 
 export interface ProjectData {
