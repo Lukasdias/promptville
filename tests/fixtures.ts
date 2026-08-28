@@ -22,6 +22,14 @@ export function makeFixture(): Database {
       tokens_cache_read INTEGER DEFAULT 0 NOT NULL, tokens_cache_write INTEGER DEFAULT 0 NOT NULL,
       metadata TEXT
     );
+    CREATE TABLE message (
+      id TEXT PRIMARY KEY, session_id TEXT NOT NULL, time_created INTEGER NOT NULL,
+      time_updated INTEGER NOT NULL, data TEXT NOT NULL
+    );
+    CREATE TABLE part (
+      id TEXT PRIMARY KEY, message_id TEXT NOT NULL, session_id TEXT NOT NULL,
+      time_created INTEGER NOT NULL, time_updated INTEGER NOT NULL, data TEXT NOT NULL
+    );
   `);
   db.run(`INSERT INTO project (id, worktree, name, icon_color, time_created, time_updated, sandboxes) VALUES
     ('p1', '/home/u/repo-a', 'repo-a', '#ff0000', 1, 1, '[]'),
@@ -32,5 +40,13 @@ export function makeFixture(): Database {
     ('s2','p1','s2','/d','Title Two','0',1700003600000,1700003600000,NULL,'',0.25,10,5),
     ('s3','p2','s3','/d','','0',1700000000000,1700000000000,'plan',NULL,0,0,0),
     ('s4','p3','s4','/d','Root work','0',1700007200000,1700007200000,'build','{"id":"minimax-m3","providerID":"opencode-go"}',2.0,200,100)`);
+  db.run(`INSERT INTO message (id, session_id, time_created, time_updated, data) VALUES
+    ('m1','s1',1700000000000,1700000000000,'{"role":"user","time":1700000000000}'),
+    ('m2','s1',1700000001000,1700000001000,'{"role":"assistant","time":1700000001000}'),
+    ('m3','s3',1700000000000,1700000000000,'{"role":"user","time":1700000000000}')`);
+  db.run(`INSERT INTO part (id, message_id, session_id, time_created, time_updated, data) VALUES
+    ('p1','m1','s1',1700000000000,1700000000000,'{"type":"text","text":"I want a  a   demo\\nline for the snippet test"}'),
+    ('p2','m2','s1',1700000001000,1700000001000,'{"type":"tool","tool":"bash"}'),
+    ('p3','m3','s3',1700000000000,1700000000000,'{"type":"text","text":"   "}')`);
   return db;
 }

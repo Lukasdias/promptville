@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/bun-sqlite";
-import { project, session } from "./schema";
+import { message, part, project, session } from "./schema";
 
 export interface SessionData {
   id: string;
@@ -12,6 +12,14 @@ export interface SessionData {
   tokensIn: number;
   tokensOut: number;
   timeCreated: number;
+  timeUpdated: number;
+  slug: string;
+  directory: string;
+  parentId: string | null;
+}
+
+export interface SessionDetail extends SessionData {
+  snippet: string;
 }
 
 export interface ProjectData {
@@ -43,7 +51,24 @@ export function openDb(path: string): Database {
 }
 
 export function createDb(db: Database) {
-  return drizzle(db, { schema: { project, session } });
+  return drizzle(db, { schema: { project, session, message, part } });
+}
+
+function sessionFromRow(s: typeof session.$inferSelect, _projectName: string): SessionData {
+  return {
+    id: s.id,
+    title: s.title.trim().length > 0 ? s.title.trim() : "(untitled)",
+    model: s.model ? extractModelId(s.model) : null,
+    agent: s.agent && s.agent.trim() ? s.agent.trim() : null,
+    cost: s.cost ?? 0,
+    tokensIn: s.tokensInput ?? 0,
+    tokensOut: s.tokensOutput ?? 0,
+    timeCreated: s.timeCreated,
+    timeUpdated: s.timeUpdated,
+    slug: s.slug,
+    directory: s.directory,
+    parentId: s.parentId,
+  };
 }
 
 function basename(p: string): string {
@@ -84,17 +109,7 @@ export function queryNeighborhood(db: Database): Neighborhood {
     if (model) modelCounts.set(model, (modelCounts.get(model) ?? 0) + 1);
     if (agent) agentCounts.set(agent, (agentCounts.get(agent) ?? 0) + 1);
 
-    const title = s.title.trim().length > 0 ? s.title.trim() : "(untitled)";
-    const sessionData: SessionData = {
-      id: s.id,
-      title,
-      model,
-      agent,
-      cost: s.cost ?? 0,
-      tokensIn: s.tokensInput ?? 0,
-      tokensOut: s.tokensOutput ?? 0,
-      timeCreated: s.timeCreated,
-    };
+    const sessionData: SessionData = sessionFromRow(s, "");
 
     let projectData = projects.get(p.id);
     if (!projectData) {
@@ -162,4 +177,51 @@ function extractModelId(modelJson: string): string | null {
   } catch {
     return null;
   }
+}
+
+export function latestTextSnippet(db: Database, sessionId: string): string {
+  const client = createDb(db);
+  const messages = client
+    .select({ id: message.id })
+    .from(message)
+    .where(eq(message.sessionId, sessionId))
+    .orderBy(desc(message.timeCreated))
+    .all();
+  for (const m of messages) {
+    const parts = client
+      .select({ data: part.data })
+      .from(part)
+      .where(eq(part.messageId, m.id))
+      .orderBy(asc(part.timeCreated))
+      .all();
+    for (const p of parts) {
+      const trimmed = textFromPart(p.data);
+      if (trimmed) return clampSnippet(trimmed);
+    }
+  }
+  return "";
+}
+
+function textFromPart(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw) as { type?: string; text?: string };
+    if (parsed.type === "text" && typeof parsed.text === "string" && parsed.text.trim()) {
+      return parsed.text.replace(/\s+/g, " ").trim();
+    }
+  } catch {
+    // non-JSON part data — ignore
+  }
+  return "";
+}
+
+function clampSnippet(t: string): string {
+  return t.length > 140 ? `${t.slice(0, 140).trimEnd()}…` : t;
+}
+
+export function sessionDetail(db: Database, sessionId: string): SessionDetail | null {
+  const client = createDb(db);
+  const row = client.select().from(session).where(eq(session.id, sessionId)).get();
+  if (!row) return null;
+  const base = sessionFromRow(row, "");
+  return { ...base, snippet: latestTextSnippet(db, sessionId) };
 }
