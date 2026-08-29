@@ -272,7 +272,8 @@ export function windowVoxels(o: HouseVoxelOptions): Voxel[] {
   return houseVoxels(o).filter((v) => v.color === WINDOW_COLOR);
 }
 
-export function treeVoxels(foliage: string, trunk: string = TRUNK_COLOR): Voxel[] {  const voxels: Voxel[] = [];
+export function treeVoxels(foliage: string, trunk: string = TRUNK_COLOR): Voxel[] {
+  const voxels: Voxel[] = [];
   for (let y = 0; y < TREE_TRUNK_HEIGHT; y++) voxels.push({ x: 0, y, z: 0, color: trunk });
   for (let y = TREE_FOLIAGE_BOTTOM; y < TREE_FOLIAGE_TOP; y++) {
     for (let x = -1; x <= 1; x++) {

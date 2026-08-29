@@ -26,6 +26,10 @@ export interface Tweaks {
   showMountains: boolean;
   showBuildings: boolean;
   showSignals: boolean;
+  showClouds: boolean;
+  showRain: boolean;
+  showDust: boolean;
+  showFog: boolean;
 }
 
 export interface Toast {
@@ -54,6 +58,10 @@ export const DEFAULT_TWEAKS: Tweaks = {
   showMountains: true,
   showBuildings: true,
   showSignals: true,
+  showClouds: true,
+  showRain: false,
+  showDust: true,
+  showFog: false,
 };
 
 interface AppState {

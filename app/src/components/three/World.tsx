@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Cloud, Float } from "@react-three/drei";
 import { MeshStandardMaterial } from "three";
 import type { PlacedBlock, Street } from "../../layout";
 import { lampVoxels, treeVoxels } from "../../voxel";
@@ -23,12 +22,6 @@ const TREE_SCALE_BASE = 0.7;
 const TREE_SCALE_RANGE = 0.6;
 const TREE_SKIP_CHANCE = 0.18;
 const LAMP_CLEAR_PAD = 0.7;
-
-const CLOUDS = [
-  { position: [-14, 12, -18], speed: 0.4, opacity: 0.9 },
-  { position: [10, 15, -6], speed: 0.3, opacity: 0.85 },
-  { position: [22, 11, 8], speed: 0.5, opacity: 0.8 },
-] as const;
 
 export function World({
   blocks,
@@ -75,12 +68,6 @@ export function World({
 
   return (
     <group>
-      <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.4}>
-        {CLOUDS.map((c, i) => (
-          <Cloud key={i} position={c.position} speed={c.speed} opacity={c.opacity} />
-        ))}
-      </Float>
-
       {/* Trees: one instanced voxel mesh per tree, scaled for variety */}
       {trees.map((t) => (
         <group key={t.key} position={[t.x, 0, t.z]} scale={t.s}>

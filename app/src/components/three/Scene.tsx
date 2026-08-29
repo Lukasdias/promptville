@@ -16,6 +16,10 @@ import { Crossers } from "./Crossers";
 import { CivicDistrict } from "./CivicDistrict";
 import { SelectedBanner } from "./SelectedBanner";
 import { Sky } from "./Sky";
+import { CloudField } from "./CloudField";
+import { Rain } from "./Rain";
+import { DustMotes } from "./DustMotes";
+import { GroundFog } from "./GroundFog";
 import { LightingRig } from "./LightingRig";
 import { LitWindows } from "./LitWindows";
 
@@ -39,6 +43,10 @@ export function Scene() {
   return (
     <>
       <Sky extent={extent} />
+      <CloudField />
+      <Rain />
+      <DustMotes />
+      <GroundFog />
       <LightingRig />
       <fog attach="fog" args={["#aee6ff", 40, 120]} />
       <Terrain extent={extent} bounds={bounds} />
