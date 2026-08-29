@@ -5,6 +5,7 @@ import { Terrain } from "./Terrain";
 import { Streets } from "./Streets";
 import { City } from "./City";
 import { ServiceRing } from "./ServiceRing";
+import { Signals } from "./Signals";
 import { World } from "./World";
 import { Details } from "./Details";
 import { Sidewalks } from "./Sidewalks";
@@ -46,6 +47,7 @@ export function Scene() {
       <Sidewalks streets={renderStreets} intersections={crosswalkIntersections} />
       <City />
       <ServiceRing />
+      <Signals />
       <LitWindows />
       <World blocks={blocks} streets={renderStreets} />
       <Details blocks={blocks} streets={renderStreets} />
