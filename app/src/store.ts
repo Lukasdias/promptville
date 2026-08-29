@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import type { SessionData, BuildingKind } from "./types";
 import type { BuildingActivity } from "./activity";
 import { EMPTY_FILTERS, type NavFilters, type SortKey } from "./navigator";
+import { clockRef } from "./night";
 
 export interface StatsRows {
   cost: boolean;
@@ -157,7 +158,15 @@ export const useApp = create<AppState>()(
       },
       dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
       timeOfDay: 12,
-      setTimeOfDay: (hours) => set({ timeOfDay: ((hours % 24) + 24) % 24 }),
+      setTimeOfDay: (hours) => {
+        const clamped = ((hours % 24) + 24) % 24;
+        // A manual set is authoritative: drive the render clock directly so a
+        // slider drag (or a reset) takes effect immediately, even while the
+        // lighting rig reads clockRef each frame. When autoCycle is on the rig
+        // will resume advancing from here.
+        clockRef.current = clamped / 24;
+        set({ timeOfDay: clamped });
+      },
       autoCycle: true,
       toggleAutoCycle: () => set((s) => ({ autoCycle: !s.autoCycle })),
       chatOpen: false,

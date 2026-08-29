@@ -43,7 +43,7 @@ export function Scene() {
   return (
     <>
       <Sky extent={extent} />
-      <CloudField />
+      <CloudField extent={extent} />
       <Rain />
       <DustMotes />
       <GroundFog />

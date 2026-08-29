@@ -94,8 +94,10 @@ export function TweakPanel() {
                 step={0.1}
                 value={timeOfDay}
                 onChange={(e) => setTimeOfDay(Number(e.target.value))}
-                className="w-full accent-amber-400"
+                disabled={autoCycle}
                 aria-label="Time of day"
+                className={`w-full accent-amber-400 ${autoCycle ? "opacity-40" : ""}`}
+                title={autoCycle ? "Turn off Auto cycle to set a time" : "Set time of day"}
               />
               <span className="opacity-60">24</span>
             </div>
