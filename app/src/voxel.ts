@@ -15,6 +15,31 @@ export const AWNING_COLORS = ["#ff8fa3", "#ffd166", "#7fb6ff", "#b0f2b4"];
 export const BREAD_TAN = "#d99b58";
 export const BREAD_BROWN = "#b8722f";
 
+// --- blueprint dimensions (heights / rows / offsets) ---
+export const DEFAULT_FOOTPRINT = 7;
+export const ACCENT_BAND_ROW = 2;
+export const WINDOW_COL = 2;
+export const WINDOW_TALL_ROW = 3;
+export const WINDOW_SHORT_ROW = 1;
+export const SIDE_WINDOW_START = 2;
+export const SIDE_WINDOW_STEP = 2;
+export const CHIMNEY_COL = 2;
+export const ANTENNA_TIP_ROW = 2;
+export const TREE_TRUNK_HEIGHT = 2;
+export const TREE_FOLIAGE_BOTTOM = 2;
+export const TREE_FOLIAGE_TOP = 5;
+export const LAMP_HEIGHT = 3;
+export const PERSON_HEAD_ROW = 3;
+export const MOUNTAIN_BASE_PEAK = 11;
+export const MOUNTAIN_PEAK_AMP_A = 3.2;
+export const MOUNTAIN_PEAK_AMP_B = 2.6;
+export const MOUNTAIN_PEAK_FREQ_A = 2;
+export const MOUNTAIN_PEAK_FREQ_B = 5;
+export const MOUNTAIN_PEAK_PHASE_A = 1.3;
+export const MOUNTAIN_PEAK_PHASE_B = 0.7;
+export const MOUNTAIN_SNOW_LINE = 13;
+export const MOUNTAIN_SNOW_DEPTH = 2;
+
 export interface PublicBuildingOptions {
   kind: BuildingKind;
   body: string;
@@ -28,8 +53,8 @@ export interface PublicBuildingOptions {
 // Generic civic building: hollow walls + roof slab, then a per-kind signature
 // mark. Follows the voxel-forms skill (footprint → walls → roof → marks).
 export function publicBuildingVoxels(o: PublicBuildingOptions): Voxel[] {
-  const W = o.width ?? 7;
-  const D = o.depth ?? 7;
+  const W = o.width ?? DEFAULT_FOOTPRINT;
+  const D = o.depth ?? DEFAULT_FOOTPRINT;
   const hw = Math.floor(W / 2);
   const hd = Math.floor(D / 2);
   const voxels: Voxel[] = [];
@@ -50,7 +75,7 @@ export function publicBuildingVoxels(o: PublicBuildingOptions): Voxel[] {
   if (o.walls >= 3) {
     for (let x = -hw; x <= hw; x++) {
       for (let z = -hd; z <= hd; z++) {
-        if (Math.abs(x) === hw || Math.abs(z) === hd) push(x, 2, z, o.accent);
+        if (Math.abs(x) === hw || Math.abs(z) === hd) push(x, ACCENT_BAND_ROW, z, o.accent);
       }
     }
   }
@@ -60,11 +85,11 @@ export function publicBuildingVoxels(o: PublicBuildingOptions): Voxel[] {
     push(0, 1, hd, o.accent);
   }
   if (o.walls >= 4) {
-    push(-2, 3, hd, WINDOW_COLOR);
-    push(2, 3, hd, WINDOW_COLOR);
+    push(-WINDOW_COL, WINDOW_TALL_ROW, hd, WINDOW_COLOR);
+    push(WINDOW_COL, WINDOW_TALL_ROW, hd, WINDOW_COLOR);
   } else if (o.walls >= 3) {
-    push(-2, 1, hd, WINDOW_COLOR);
-    push(2, 1, hd, WINDOW_COLOR);
+    push(-WINDOW_COL, WINDOW_SHORT_ROW, hd, WINDOW_COLOR);
+    push(WINDOW_COL, WINDOW_SHORT_ROW, hd, WINDOW_COLOR);
   }
 
   switch (o.kind) {
@@ -164,8 +189,8 @@ export interface HouseVoxelOptions {
 }
 
 export function houseVoxels(o: HouseVoxelOptions): Voxel[] {
-  const W = o.width ?? 7;
-  const D = o.depth ?? 7;
+  const W = o.width ?? DEFAULT_FOOTPRINT;
+  const D = o.depth ?? DEFAULT_FOOTPRINT;
   const hw = Math.floor(W / 2);
   const hd = Math.floor(D / 2);
   const door = o.door ?? DOOR_COLOR;
@@ -200,7 +225,7 @@ export function houseVoxels(o: HouseVoxelOptions): Voxel[] {
 
   // Side window columns (mansion / skyscraper)
   if (o.sideWindows) {
-    for (let y = 2; y < o.walls - 1; y += 2) {
+    for (let y = SIDE_WINDOW_START; y < o.walls - 1; y += SIDE_WINDOW_STEP) {
       push(hw, y, -1, window);
       push(hw, y, 1, window);
       push(-hw, y, -1, window);
@@ -239,23 +264,23 @@ export function houseVoxels(o: HouseVoxelOptions): Voxel[] {
 
 export function treeVoxels(foliage: string, trunk: string = TRUNK_COLOR): Voxel[] {
   const voxels: Voxel[] = [];
-  for (let y = 0; y < 2; y++) voxels.push({ x: 0, y, z: 0, color: trunk });
-  for (let y = 2; y < 5; y++) {
+  for (let y = 0; y < TREE_TRUNK_HEIGHT; y++) voxels.push({ x: 0, y, z: 0, color: trunk });
+  for (let y = TREE_FOLIAGE_BOTTOM; y < TREE_FOLIAGE_TOP; y++) {
     for (let x = -1; x <= 1; x++) {
       for (let z = -1; z <= 1; z++) {
-        if (y === 4 && Math.abs(x) === 1 && Math.abs(z) === 1) continue;
+        if (y === TREE_FOLIAGE_TOP - 1 && Math.abs(x) === 1 && Math.abs(z) === 1) continue;
         voxels.push({ x, y, z, color: foliage });
       }
     }
   }
-  voxels.push({ x: 0, y: 5, z: 0, color: foliage });
+  voxels.push({ x: 0, y: TREE_FOLIAGE_TOP, z: 0, color: foliage });
   return voxels;
 }
 
 export function lampVoxels(pole: string = POLE_COLOR, glow: string = GLOW_COLOR): Voxel[] {
   const voxels: Voxel[] = [];
-  for (let y = 0; y < 3; y++) voxels.push({ x: 0, y, z: 0, color: pole });
-  voxels.push({ x: 0, y: 3, z: 0, color: glow });
+  for (let y = 0; y < LAMP_HEIGHT; y++) voxels.push({ x: 0, y, z: 0, color: pole });
+  voxels.push({ x: 0, y: LAMP_HEIGHT, z: 0, color: glow });
   return voxels;
 }
 
@@ -264,7 +289,7 @@ export function personVoxels(shirt: string, skin: string = SKIN_COLOR): Voxel[] 
   voxels.push({ x: 0, y: 0, z: 0, color: PANT_COLOR });
   voxels.push({ x: 0, y: 1, z: 0, color: shirt });
   voxels.push({ x: 0, y: 2, z: 0, color: shirt });
-  voxels.push({ x: 0, y: 3, z: 0, color: skin });
+  voxels.push({ x: 0, y: PERSON_HEAD_ROW, z: 0, color: skin });
   return voxels;
 }
 
@@ -427,11 +452,14 @@ export function mountainRingVoxels(
       if (t >= halfWidth) continue;
       const falloff = 1 - t / halfWidth;
       const angle = Math.atan2(dz, dx);
-      const peak = 11 + Math.sin(angle * 2 + 1.3) * 3.2 + Math.sin(angle * 5 + 0.7) * 2.6;
+      const peak =
+        MOUNTAIN_BASE_PEAK +
+        Math.sin(angle * MOUNTAIN_PEAK_FREQ_A + MOUNTAIN_PEAK_PHASE_A) * MOUNTAIN_PEAK_AMP_A +
+        Math.sin(angle * MOUNTAIN_PEAK_FREQ_B + MOUNTAIN_PEAK_PHASE_B) * MOUNTAIN_PEAK_AMP_B;
       const h = Math.round(peak * falloff);
       if (h <= 0) continue;
-      const isSnowy = h >= 13;
-      const snowDepth = isSnowy ? 2 : 0;
+      const isSnowy = h >= MOUNTAIN_SNOW_LINE;
+      const snowDepth = isSnowy ? MOUNTAIN_SNOW_DEPTH : 0;
       for (let y = 0; y < h; y++) {
         voxels.push({ x, y, z, color: y >= h - snowDepth ? snow : base });
       }

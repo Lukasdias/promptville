@@ -19,6 +19,8 @@ const STONE_TILES = 4;
 export const GRASS_TILE_WORLD = 6;
 export const BRICK_TILE_X = 1.6;
 export const BRICK_TILE_Y = 0.8;
+export const ASPHALT_TILE_WORLD = 4;
+export const STONE_TILE_WORLD = 3;
 
 export function makeTileableTexture(
   width: number,
@@ -197,4 +199,43 @@ export function sidewalkMaterialFor(width: number, depth: number): MeshStandardM
   const material = new MeshStandardMaterial({ map: tex, roughness: 1 });
   material.needsUpdate = true;
   return material;
+}
+
+// Per-surface materials that keep the base texture at a constant world scale
+// (repeat = size / tileWorld) and use polygonOffset so near-coplanar surfaces
+// resolve deterministically instead of z-fighting. One per lot/street/plaza/park.
+function tiledSurfaceMaterial(
+  base: CanvasTexture,
+  width: number,
+  depth: number,
+  tileWorld: number,
+): MeshStandardMaterial {
+  const tex = base.clone();
+  tex.repeat.set(Math.max(1, width / tileWorld), Math.max(1, depth / tileWorld));
+  tex.needsUpdate = true;
+  const material = new MeshStandardMaterial({
+    map: tex,
+    roughness: 1,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1,
+  });
+  material.needsUpdate = true;
+  return material;
+}
+
+export function asphaltMaterialFor(width: number, depth: number): MeshStandardMaterial {
+  return tiledSurfaceMaterial(asphaltTexture, width, depth, ASPHALT_TILE_WORLD);
+}
+
+export function grassLotMaterialFor(width: number, depth: number): MeshStandardMaterial {
+  return tiledSurfaceMaterial(grassLotTexture, width, depth, GRASS_TILE_WORLD);
+}
+
+export function plazaMaterialFor(width: number, depth: number): MeshStandardMaterial {
+  return tiledSurfaceMaterial(plazaTexture, width, depth, STONE_TILE_WORLD);
+}
+
+export function parkMaterialFor(size: number): MeshStandardMaterial {
+  return tiledSurfaceMaterial(parkTexture, size, size, GRASS_TILE_WORLD);
 }

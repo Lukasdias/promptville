@@ -25,6 +25,7 @@ export const COLORS = {
   brick: "#c9744f",
   mortar: "#a85a3d",
   crosswalk: "#f7f3e8",
+  curb: "#b8623f",
   cream: "#fff6e5",
   ink: "#4a4453",
   mountain: "#8a9b6e",

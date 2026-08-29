@@ -2,20 +2,28 @@ import { useMemo } from "react";
 import { MeshStandardMaterial } from "three";
 import type { Street } from "../../layout";
 import type { Intersection } from "../../traffic";
+import { sidewalkSegments, SIDEWALK_HEIGHT, CURB_HEIGHT } from "../../sidewalk";
 import { sidewalkMaterialFor } from "../../textures";
 import { buildCrosswalks } from "../../crosswalk";
-import { CROSSWALK_BRICK } from "../../theme";
+import { COLORS, CROSSWALK_BRICK } from "../../theme";
+import { useApp } from "../../store";
+import { isPanActive } from "../../pan";
 
-const SIDEWALK_WIDTH = 0.7;
-
-const CROSSWALK_MATERIAL = new MeshStandardMaterial({ color: CROSSWALK_BRICK, roughness: 1 });
-
-interface SidewalkRect {
-  x: number;
-  z: number;
-  w: number;
-  d: number;
-}
+const CURB_MATERIAL = new MeshStandardMaterial({
+  color: COLORS.curb,
+  roughness: 1,
+  polygonOffset: true,
+  polygonOffsetFactor: -1,
+  polygonOffsetUnits: -1,
+});
+const CROSSWALK_MATERIAL = new MeshStandardMaterial({
+  color: CROSSWALK_BRICK,
+  roughness: 1,
+  polygonOffset: true,
+  polygonOffsetFactor: -1,
+  polygonOffsetUnits: -1,
+});
+const CROSSWALK_TOP = 0.055;
 
 export function Sidewalks({
   streets,
@@ -24,43 +32,49 @@ export function Sidewalks({
   streets: Street[];
   intersections: Intersection[];
 }) {
-  const sidewalks = useMemo<SidewalkRect[]>(() => {
-    const out: SidewalkRect[] = [];
-    for (const s of streets) {
-      if (s.width >= s.depth) {
-        out.push({ x: s.x, z: s.z - s.depth / 2 - SIDEWALK_WIDTH / 2, w: s.width, d: SIDEWALK_WIDTH });
-        out.push({ x: s.x, z: s.z + s.depth / 2 + SIDEWALK_WIDTH / 2, w: s.width, d: SIDEWALK_WIDTH });
-      } else {
-        out.push({ x: s.x - s.width / 2 - SIDEWALK_WIDTH / 2, z: s.z, w: SIDEWALK_WIDTH, d: s.depth });
-        out.push({ x: s.x + s.width / 2 + SIDEWALK_WIDTH / 2, z: s.z, w: SIDEWALK_WIDTH, d: s.depth });
-      }
-    }
-    return out;
-  }, [streets]);
-
-  const sidewalkMaterials = useMemo(
-    () => sidewalks.map((sw) => sidewalkMaterialFor(sw.w, sw.d)),
-    [sidewalks],
-  );
-
+  const clearSelection = useApp((s) => s.clearSelection);
+  const segments = useMemo(() => sidewalkSegments(streets), [streets]);
   const crosswalks = useMemo(
     () => buildCrosswalks(intersections, streets),
     [intersections, streets],
   );
+  const materials = useMemo(
+    () =>
+      segments.map((seg) =>
+        seg.kind === "walk" ? sidewalkMaterialFor(seg.w, seg.d) : CURB_MATERIAL,
+      ),
+    [segments],
+  );
+
+  const clear = (e: { stopPropagation: () => void }) => {
+    if (isPanActive()) return;
+    e.stopPropagation();
+    clearSelection();
+  };
 
   return (
     <group>
-      {sidewalks.map((sw, i) => (
-        <mesh key={i} position={[sw.x, -0.035, sw.z]} rotation-x={-Math.PI / 2} receiveShadow material={sidewalkMaterials[i]}>
-          <planeGeometry args={[sw.w, sw.d]} />
-        </mesh>
-      ))}
+      {segments.map((seg, i) => {
+        const height = seg.kind === "walk" ? SIDEWALK_HEIGHT : CURB_HEIGHT;
+        return (
+          <mesh
+            key={i}
+            position={[seg.x, height / 2, seg.z]}
+            receiveShadow
+            material={materials[i]}
+            onClick={clear}
+          >
+            <boxGeometry args={[seg.w, height, seg.d]} />
+          </mesh>
+        );
+      })}
       {crosswalks.map((c, i) => (
         <mesh
           key={`cs${i}`}
-          position={[c.x, -0.041, c.z]}
+          position={[c.x, CROSSWALK_TOP, c.z]}
           rotation-x={-Math.PI / 2}
           material={CROSSWALK_MATERIAL}
+          onClick={clear}
         >
           <planeGeometry args={[c.w, c.d]} />
         </mesh>

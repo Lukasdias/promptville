@@ -46,7 +46,9 @@ export function useCity(): CityLayout {
   const mainStreets = buildStreets(blocks);
   const bounds = cityBounds(blocks);
   const ring = bounds ? buildPerimeterRing(bounds) : [];
-  const renderStreets = bounds ? [...mainStreets, ...ring] : [];
+  // Render the extended network so every street reaches its avenue/junction —
+  // no mid-town dead-end gaps (the traffic graph already uses the same network).
+  const renderStreets = bounds ? [...extendRoadsToRing(mainStreets, bounds), ...ring] : [];
   const graphStreets = bounds ? [...extendRoadsToRing(mainStreets, bounds), ...ring] : [];
   const extent = mountainOuterRadius(blocks, renderStreets) + 6;
 
