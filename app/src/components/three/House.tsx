@@ -2,33 +2,12 @@ import { useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Float, Html } from "@react-three/drei";
 import type { Group } from "three";
-import { houseScale } from "../../layout";
-import { MODEL_ROOF, PROJECT_PALETTE, UNKNOWN_ROOF } from "../../theme";
-import { houseVoxels } from "../../voxel";
+import { houseParams, houseVoxelsFor } from "../../house";
+import { WINDOW_COLOR } from "../../voxel";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { useApp } from "../../store";
 import { isPanActive } from "../../pan";
 import type { SessionData } from "../../types";
-
-type HouseKind = "cottage" | "house" | "mansion" | "skyscraper";
-
-const KIND_GEOMETRY: Record<HouseKind, { footprint: number; width: number }> = {
-  cottage: { footprint: 5, width: 0.6 },
-  house: { footprint: 7, width: 0.72 },
-  mansion: { footprint: 9, width: 1.15 },
-  skyscraper: { footprint: 5, width: 0.65 },
-};
-
-const SCALE_COTTAGE_MAX = 1.5;
-const SCALE_HOUSE_MAX = 3.2;
-const SCALE_MANSION_MAX = 5;
-
-function kindFor(scale: number): HouseKind {
-  if (scale < SCALE_COTTAGE_MAX) return "cottage";
-  if (scale < SCALE_HOUSE_MAX) return "house";
-  if (scale < SCALE_MANSION_MAX) return "mansion";
-  return "skyscraper";
-}
 
 export function House({
   session,
@@ -47,41 +26,14 @@ export function House({
   const hoverRef = useRef(0);
   const [hovered, setHovered] = useState(false);
 
-  const bodyColor = useMemo(() => PROJECT_PALETTE[paletteIndex % PROJECT_PALETTE.length], [paletteIndex]);
-  const roofColor = useMemo(() => (session.model ? MODEL_ROOF[session.model] ?? UNKNOWN_ROOF : UNKNOWN_ROOF), [session.model]);
-  const scale = useMemo(() => houseScale(session.tokensIn, session.tokensOut), [session.tokensIn, session.tokensOut]);
-  const kind = useMemo(() => kindFor(scale), [scale]);
-  const { footprint, width } = KIND_GEOMETRY[kind];
-  const idCode = useMemo(() => session.id.charCodeAt(0), [session.id]);
+  const hp = useMemo(() => houseParams(session, paletteIndex), [session, paletteIndex]);
+  const voxelScale = hp.voxelScale;
 
-  const voxels = useMemo(() => {
-    const walls = (() => {
-      switch (kind) {
-        case "cottage":
-          return 3;
-        case "house":
-          return Math.min(6, 3 + Math.round((scale - 1.5) * 1.2));
-        case "mansion":
-          return Math.min(8, 5 + Math.round((scale - 3.2) * 1.5));
-        case "skyscraper":
-          return Math.min(16, 10 + Math.round((scale - 5) * 4));
-      }
-    })();
-    return houseVoxels({
-      body: bodyColor,
-      roof: roofColor,
-      width: footprint,
-      depth: footprint,
-      walls,
-      pitched: kind !== "skyscraper",
-      chimney: kind === "mansion" ? idCode % 3 === 0 : idCode % 4 === 0,
-      windows: kind !== "cottage",
-      sideWindows: kind === "mansion" || kind === "skyscraper",
-      antenna: kind === "skyscraper",
-    });
-  }, [kind, scale, bodyColor, roofColor, footprint, idCode]);
-
-  const voxelScale = useMemo(() => width / (footprint * 0.96), [width, footprint]);
+  // Structure voxels minus the window cells (the night-glow layer renders those).
+  const voxels = useMemo(
+    () => houseVoxelsFor(hp).filter((v) => v.color !== WINDOW_COLOR),
+    [hp],
+  );
   const delay = useMemo(() => (session.id.charCodeAt(session.id.length - 1) % 30) / 60, [session.id]);
   const start = useRef<number | null>(null);
   const isSelected = selected?.id === session.id;
