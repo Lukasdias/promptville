@@ -1,9 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
   landmarkHeight,
-  parkSize,
-  workshopSpots,
-  workshopColor,
   houseWindowRows,
   heavyChange,
   activeCitizen,
@@ -17,34 +14,6 @@ describe("layered city mappings", () => {
     expect(landmarkHeight(0)).toBe(LANDMARK_MIN_H);
     expect(landmarkHeight(1000)).toBeGreaterThan(landmarkHeight(0));
     expect(landmarkHeight(1e6)).toBeLessThanOrEqual(LANDMARK_MAX_H);
-  });
-
-  test("park size scales with todo count and clamps", () => {
-    expect(parkSize(0)).toBe(0);
-    expect(parkSize(1)).toBeGreaterThan(0);
-    expect(parkSize(100)).toBeLessThanOrEqual(6);
-  });
-
-  test("workshop spots stay inside block bounds and along the inner edge", () => {
-    const block = { x: 0, z: 0, width: 20, depth: 20 };
-    const spots = workshopSpots(["edit", "bash", "read"], block);
-    expect(spots).toHaveLength(3);
-    for (const s of spots) {
-      expect(Math.abs(s.x)).toBeLessThanOrEqual(block.width / 2);
-      expect(Math.abs(s.z)).toBeLessThanOrEqual(block.depth / 2);
-    }
-  });
-
-  test("workshops have no overlapping positions", () => {
-    const block = { x: 0, z: 0, width: 20, depth: 20 };
-    const spots = workshopSpots(["edit", "bash", "read", "grep", "write"], block);
-    const keys = new Set(spots.map((s) => `${s.x}:${s.z}`));
-    expect(keys.size).toBe(spots.length);
-  });
-
-  test("workshopColor returns a distinct color per tool", () => {
-    expect(workshopColor("edit")).toBe(workshopColor("edit"));
-    expect(workshopColor("edit")).not.toBe(workshopColor("bash"));
   });
 
   test("houseWindowRows is 1 or 2 based on message count", () => {

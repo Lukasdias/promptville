@@ -347,64 +347,14 @@ export function signVoxels(pole: string = SIGN_POLE, board: string = SIGN_BOARD)
   return voxels;
 }
 
-export const WORKSHOP_COLOR = "#7fb6ff";
-
-// Small tool shed along the block's inner edge.
-export function workshopVoxels(body: string = WORKSHOP_COLOR): Voxel[] {
-  const voxels: Voxel[] = [];
-  const hw = 2;
-  for (let x = -hw; x <= hw; x++) {
-    for (let z = -hw; z <= hw; z++) {
-      if (Math.abs(x) === hw || Math.abs(z) === hw) {
-        for (let y = 0; y < 2; y++) voxels.push({ x, y, z, color: body });
-      }
-    }
-  }
-  voxels.push({ x: 0, y: 2, z: 0, color: body });
-  voxels.push({ x: 0, y: 1, z: hw, color: WINDOW_COLOR });
-  return voxels;
-}
-
-export function parkVoxels(size: number): Voxel[] {
-  const voxels: Voxel[] = [];
-  const r = Math.min(3, Math.max(1, size));
-  for (let x = -r; x <= r; x++) {
-    for (let z = -r; z <= r; z++) {
-      if (Math.abs(x) === r && Math.abs(z) === r) continue;
-      voxels.push({ x, y: 0, z, color: BUSH_COLOR });
-    }
-  }
-  voxels.push(...treeVoxels("#86c255"));
-  voxels.push(...benchVoxels());
-  if (size >= 3) voxels.push(...fountainVoxels());
-  return voxels;
-}
-
+// Thin, minimal spire — a single column of unit voxels (no wide base, no flare).
+// Reads as a slim marker rather than a chunky building.
 export function landmarkVoxels(height: number, body: string, glow: string): Voxel[] {
   const voxels: Voxel[] = [];
   for (let y = 0; y < height; y++) {
-    const r = y < 2 ? 2 : y < height - 1 ? 1 : 0;
-    for (let x = -r; x <= r; x++) {
-      for (let z = -r; z <= r; z++) {
-        if (Math.abs(x) === r || Math.abs(z) === r || r === 0) {
-          voxels.push({ x, y, z, color: y === height - 1 ? glow : body });
-        }
-      }
-    }
+    voxels.push({ x: 0, y, z: 0, color: y === height - 1 ? glow : body });
   }
   return voxels;
-}
-
-export function todoSignVoxels(): Voxel[] {
-  return signVoxels(SIGN_POLE, "#ffd24a");
-}
-
-export function markerVoxels(color: string): Voxel[] {
-  return [
-    { x: 0, y: 0, z: 0, color },
-    { x: 0, y: 1, z: 0, color },
-    { x: 0, y: 2, z: 0, color },
-  ];
 }
 
 export function benchVoxels(wood: string = BENCH_WOOD): Voxel[] {

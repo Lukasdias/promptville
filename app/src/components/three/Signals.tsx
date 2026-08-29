@@ -4,9 +4,7 @@ import { Float, Html } from "@react-three/drei";
 import { useCity } from "../../city";
 import { useNeighborhood } from "../../query";
 import { useApp } from "../../store";
-import { heavyChange, landmarkHeight } from "../../layered";
-import { markerVoxels, todoSignVoxels } from "../../voxel";
-import { InstancedVoxels } from "./InstancedVoxels";
+import { landmarkHeight } from "../../layered";
 
 const CARD_STYLE: CSSProperties = {
   background: "#fff6e5",
@@ -32,10 +30,6 @@ interface BlockSignal {
   name: string;
   sessionCount: number;
   totalCost: number;
-  hasTodos: boolean;
-  markers: { x: number; z: number }[];
-  todoX: number;
-  todoZ: number;
 }
 
 export function Signals() {
@@ -50,10 +44,6 @@ export function Signals() {
       if (block.kind === "plaza") continue;
       const project = data.projects.find((p) => p.id === block.projectId);
       if (!project || project.sessions.length === 0) continue;
-      const markers = project.sessions
-        .map((s, i) => ({ s, slot: block.houses[i] }))
-        .filter(({ s, slot }) => slot && heavyChange(s.patchCount, s.diffAdditions))
-        .map(({ slot }) => ({ x: slot!.x, z: slot!.z }));
       out.push({
         id: block.projectId,
         x: block.x,
@@ -62,10 +52,6 @@ export function Signals() {
         name: project.name,
         sessionCount: project.sessions.length,
         totalCost: project.totalCost,
-        hasTodos: project.todoCount > 0,
-        markers,
-        todoX: block.x + 3,
-        todoZ: block.z - 3,
       });
     }
     return out;
@@ -90,24 +76,6 @@ export function Signals() {
           </Html>
         </Float>
       ))}
-      {signals.map((s) =>
-        s.markers.length > 0 ? (
-          <InstancedVoxels
-            key={`markers-${s.id}`}
-            voxels={s.markers.flatMap((m) =>
-              markerVoxels("#ff5252").map((v) => ({ ...v, x: v.x + m.x, z: v.z + m.z })),
-            )}
-          />
-        ) : null,
-      )}
-      {signals
-        .filter((s) => s.hasTodos)
-        .map((s) => (
-          <InstancedVoxels
-            key={`todo-${s.id}`}
-            voxels={todoSignVoxels().map((v) => ({ ...v, x: v.x + s.todoX, z: v.z + s.todoZ }))}
-          />
-        ))}
     </group>
   );
 }

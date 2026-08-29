@@ -4,15 +4,15 @@ import { MeshStandardMaterial } from "three";
 import { useCity } from "../../city";
 import { useNeighborhood } from "../../query";
 import { useApp } from "../../store";
-import { landmarkHeight, parkSize, workshopSpots, workshopColor } from "../../layered";
-import { landmarkVoxels, parkVoxels, workshopVoxels } from "../../voxel";
-import { placeVoxels } from "../../voxel";
+import { landmarkHeight } from "../../layered";
+import { landmarkVoxels } from "../../voxel";
+import { MODEL_ROOF, UNKNOWN_ROOF } from "../../theme";
 import { GLOW_MAX } from "../../theme";
 import { nightRef } from "../../night";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { isPanActive } from "../../pan";
 
-const SIZE = 0.4;
+const SIZE = 0.12;
 
 export function ServiceRing() {
   const { blocks } = useCity();
@@ -40,31 +40,22 @@ export function ServiceRing() {
       id: string;
       x: number;
       z: number;
-      landmark: ReturnType<typeof landmarkVoxels>;
-      scenery: ReturnType<typeof landmarkVoxels>;
+      voxels: ReturnType<typeof landmarkVoxels>;
     }[] = [];
     for (const block of blocks) {
       if (block.kind === "plaza") continue;
       const project = data.projects.find((p) => p.id === block.projectId);
       if (!project) continue;
 
+      const model = project.sessions[0]?.model ?? null;
+      const body = model ? MODEL_ROOF[model] ?? UNKNOWN_ROOF : UNKNOWN_ROOF;
       const h = landmarkHeight(project.totalCost);
-      const landmark = landmarkVoxels(h, "#d8d4c8", "#ffd98a").map((v) => ({
+      const voxels = landmarkVoxels(h, body, body).map((v) => ({
         ...v,
         x: v.x + block.x,
         z: v.z + block.z,
       }));
-      const park = project.todoCount > 0 ? parkVoxels(parkSize(project.todoCount)) : [];
-      const topTools = [...new Set(project.sessions.flatMap((s) => s.toolNames ?? []))].slice(0, 4);
-      const workshops = workshopSpots(topTools, block);
-      const scenery = [
-        ...placeVoxels(park, block.x + 3, block.z - 3, SIZE),
-        ...workshops.flatMap((w) =>
-          placeVoxels(workshopVoxels(workshopColor(w.tool)), w.x, w.z, SIZE),
-        ),
-      ];
-
-      out.push({ id: block.projectId, x: block.x, z: block.z, landmark, scenery });
+      out.push({ id: block.projectId, x: block.x, z: block.z, voxels });
     }
     return out;
   }, [blocks, data]);
@@ -74,13 +65,11 @@ export function ServiceRing() {
   return (
     <group>
       {lots.map((lot) => (
-        <InstancedVoxels key={lot.id} voxels={lot.landmark} voxelSize={SIZE} material={landmarkMaterial} />
-      ))}
-      {lots.map((lot) => (
         <InstancedVoxels
-          key={`scenery-${lot.id}`}
-          voxels={lot.scenery}
+          key={lot.id}
+          voxels={lot.voxels}
           voxelSize={SIZE}
+          material={landmarkMaterial}
           onClick={(e) => {
             if (isPanActive()) return;
             e.stopPropagation();
