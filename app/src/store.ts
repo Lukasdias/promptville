@@ -25,6 +25,7 @@ export interface Tweaks {
   showScenery: boolean;
   showMountains: boolean;
   showBuildings: boolean;
+  showSignals: boolean;
 }
 
 export interface Toast {
@@ -52,6 +53,7 @@ export const DEFAULT_TWEAKS: Tweaks = {
   showScenery: true,
   showMountains: true,
   showBuildings: true,
+  showSignals: true,
 };
 
 interface AppState {
@@ -83,6 +85,10 @@ interface AppState {
   toasts: Toast[];
   pushToast: (kind: Toast["kind"], message: string) => void;
   dismissToast: (id: number) => void;
+  timeOfDay: number;
+  setTimeOfDay: (hours: number) => void;
+  autoCycle: boolean;
+  toggleAutoCycle: () => void;
 }
 
 export const useApp = create<AppState>()(
@@ -131,6 +137,10 @@ export const useApp = create<AppState>()(
         setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 2600);
       },
       dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+      timeOfDay: 12,
+      setTimeOfDay: (hours) => set({ timeOfDay: ((hours % 24) + 24) % 24 }),
+      autoCycle: true,
+      toggleAutoCycle: () => set((s) => ({ autoCycle: !s.autoCycle })),
     }),
     {
       name: "promptville-tweaks",
@@ -139,6 +149,8 @@ export const useApp = create<AppState>()(
         navigatorOpen: s.navigatorOpen,
         filters: s.filters,
         sortKey: s.sortKey,
+        timeOfDay: s.timeOfDay,
+        autoCycle: s.autoCycle,
       }),
       merge: (persisted, current) => ({
         ...current,

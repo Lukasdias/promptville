@@ -48,6 +48,10 @@ export function TweakPanel() {
   const setTweak = useApp((s) => s.setTweak);
   const setStatsRow = useApp((s) => s.setStatsRow);
   const resetTweaks = useApp((s) => s.resetTweaks);
+  const timeOfDay = useApp((s) => s.timeOfDay);
+  const setTimeOfDay = useApp((s) => s.setTimeOfDay);
+  const autoCycle = useApp((s) => s.autoCycle);
+  const toggleAutoCycle = useApp((s) => s.toggleAutoCycle);
 
   const { opacity, x } = useSpring({
     from: { opacity: 0, x: -16 },
@@ -79,6 +83,29 @@ export function TweakPanel() {
             <Toggle label="Top models" value={t.statsRows.models} onChange={(v) => setStatsRow("models", v)} />
             <Toggle label="Top agents" value={t.statsRows.agents} onChange={(v) => setStatsRow("agents", v)} />
             <Toggle label="Top projects" value={t.statsRows.projects} onChange={(v) => setStatsRow("projects", v)} />
+          </Group>
+          <Group title="Time of day">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="opacity-60">0</span>
+              <input
+                type="range"
+                min={0}
+                max={23.9}
+                step={0.1}
+                value={timeOfDay}
+                onChange={(e) => setTimeOfDay(Number(e.target.value))}
+                className="w-full accent-amber-400"
+                aria-label="Time of day"
+              />
+              <span className="opacity-60">24</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <Toggle label="Auto cycle" value={autoCycle} onChange={toggleAutoCycle} />
+              <span className="font-display opacity-70">
+                {String(Math.floor(timeOfDay)).padStart(2, "0")}:
+                {String(Math.floor((timeOfDay % 1) * 60)).padStart(2, "0")}
+              </span>
+            </div>
           </Group>
           <Group title="World">
             <Toggle label="People" value={t.showPeople} onChange={(v) => setTweak("showPeople", v)} />

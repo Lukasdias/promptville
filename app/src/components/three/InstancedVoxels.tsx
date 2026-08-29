@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
-import { BoxGeometry, Color, InstancedMesh, Object3D } from "three";
+import { BoxGeometry, Color, InstancedMesh, type Material, Object3D } from "three";
 import type { Voxel } from "../../voxel";
 
 // Shared unit cube — created once, reused by every instanced voxel mesh.
@@ -11,6 +11,7 @@ const _color = new Color();
 interface InstancedVoxelsProps {
   voxels: Voxel[];
   voxelSize?: number;
+  material?: Material;
   onClick?: (e: ThreeEvent<MouseEvent>) => void;
   onPointerOver?: (e: ThreeEvent<PointerEvent>) => void;
   onPointerOut?: (e: ThreeEvent<PointerEvent>) => void;
@@ -19,6 +20,7 @@ interface InstancedVoxelsProps {
 export function InstancedVoxels({
   voxels,
   voxelSize = 1,
+  material,
   onClick,
   onPointerOver,
   onPointerOut,
@@ -59,14 +61,14 @@ export function InstancedVoxels({
   return (
     <instancedMesh
       ref={ref}
-      args={[geometry, undefined, voxels.length]}
+      args={[geometry, material, voxels.length]}
       castShadow
       receiveShadow
       onClick={onClick}
       onPointerOver={onPointerOver}
       onPointerOut={onPointerOut}
     >
-      <meshStandardMaterial flatShading />
+      {material ? null : <meshStandardMaterial flatShading />}
     </instancedMesh>
   );
 }

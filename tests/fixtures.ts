@@ -30,6 +30,11 @@ export function makeFixture(): Database {
       id TEXT PRIMARY KEY, message_id TEXT NOT NULL, session_id TEXT NOT NULL,
       time_created INTEGER NOT NULL, time_updated INTEGER NOT NULL, data TEXT NOT NULL
     );
+    CREATE TABLE todo (
+      session_id TEXT NOT NULL, content TEXT NOT NULL, status TEXT NOT NULL,
+      priority TEXT NOT NULL, position INTEGER NOT NULL,
+      time_created INTEGER NOT NULL, time_updated INTEGER NOT NULL
+    );
   `);
   db.run(`INSERT INTO project (id, worktree, name, icon_color, time_created, time_updated, sandboxes) VALUES
     ('p1', '/home/u/repo-a', 'repo-a', '#ff0000', 1, 1, '[]'),

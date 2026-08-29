@@ -186,6 +186,7 @@ export interface HouseVoxelOptions {
   windows?: boolean;
   sideWindows?: boolean;
   antenna?: boolean;
+  windowRows?: number;
 }
 
 export function houseVoxels(o: HouseVoxelOptions): Voxel[] {
@@ -221,6 +222,10 @@ export function houseVoxels(o: HouseVoxelOptions): Voxel[] {
   if (o.windows !== false && o.walls >= 4) {
     push(-2, 2, hd, window);
     push(2, 2, hd, window);
+    if ((o.windowRows ?? 1) > 1 && o.walls >= 5) {
+      push(-2, 3, hd, window);
+      push(2, 3, hd, window);
+    }
   }
 
   // Side window columns (mansion / skyscraper)
@@ -262,8 +267,12 @@ export function houseVoxels(o: HouseVoxelOptions): Voxel[] {
   return voxels;
 }
 
-export function treeVoxels(foliage: string, trunk: string = TRUNK_COLOR): Voxel[] {
-  const voxels: Voxel[] = [];
+// Returns only the WINDOW_COLOR cells from a house blueprint, for lit windows.
+export function windowVoxels(o: HouseVoxelOptions): Voxel[] {
+  return houseVoxels(o).filter((v) => v.color === WINDOW_COLOR);
+}
+
+export function treeVoxels(foliage: string, trunk: string = TRUNK_COLOR): Voxel[] {  const voxels: Voxel[] = [];
   for (let y = 0; y < TREE_TRUNK_HEIGHT; y++) voxels.push({ x: 0, y, z: 0, color: trunk });
   for (let y = TREE_FOLIAGE_BOTTOM; y < TREE_FOLIAGE_TOP; y++) {
     for (let x = -1; x <= 1; x++) {
@@ -335,6 +344,16 @@ export function signVoxels(pole: string = SIGN_POLE, board: string = SIGN_BOARD)
   voxels.push({ x: -1, y: 3, z: 0, color: board });
   voxels.push({ x: 0, y: 3, z: 0, color: board });
   voxels.push({ x: 1, y: 3, z: 0, color: board });
+  return voxels;
+}
+
+// Thin, minimal spire — a single column of unit voxels (no wide base, no flare).
+// Reads as a slim marker rather than a chunky building.
+export function landmarkVoxels(height: number, body: string, glow: string): Voxel[] {
+  const voxels: Voxel[] = [];
+  for (let y = 0; y < height; y++) {
+    voxels.push({ x: 0, y, z: 0, color: y === height - 1 ? glow : body });
+  }
   return voxels;
 }
 

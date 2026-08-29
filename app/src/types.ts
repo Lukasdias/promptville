@@ -11,6 +11,11 @@ export interface SessionData {
   slug: string;
   directory: string;
   parentId: string | null;
+  messageCount: number;
+  patchCount: number;
+  toolNames: string[];
+  diffAdditions: number;
+  diffDeletions: number;
 }
 
 export interface SessionDetail extends SessionData {
@@ -23,6 +28,10 @@ export interface ProjectData {
   path: string;
   iconColor: string | null;
   sessions: SessionData[];
+  toolCounts: Record<string, number>;
+  todoCount: number;
+  totalCost: number;
+  reasoningTokens: number;
 }
 
 export interface Stats {
@@ -34,6 +43,8 @@ export interface Stats {
   topAgents: { model: string; count: number }[];
   topProjects: { name: string; count: number }[];
   busiestDay: string | null;
+  totalTodoCount: number;
+  activeSessions: number;
 }
 
 export interface Neighborhood {
