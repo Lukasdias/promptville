@@ -17,3 +17,14 @@ export const traffic = {
   // Base green-light cycle in seconds; each phase gets a random ±30% offset.
   cycle: 8,
 };
+
+// Deterministic standing-groups scatter. Tuning knobs for the crowd layer.
+export const crowd = {
+  clusters: 6,
+  membersPerCluster: 5,
+  clusterRadius: 2.2,
+  talkingCount: 2,
+  bubbleDuration: 3.2,
+  quietDuration: 5.0,
+  seed: 4242,
+};
