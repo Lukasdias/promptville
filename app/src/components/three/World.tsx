@@ -1,9 +1,13 @@
 import { useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
 import { Cloud, Float } from "@react-three/drei";
+import { MeshStandardMaterial } from "three";
 import type { PlacedBlock, Street } from "../../layout";
 import { lampVoxels, treeVoxels } from "../../voxel";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { COLORS } from "../../theme";
+import { LAMP_GLOW, GLOW_MAX } from "../../theme";
+import { nightRef } from "../../night";
 import { useApp } from "../../store";
 import { environment } from "../../config";
 import { isClearSpot } from "../../placement";
@@ -59,6 +63,14 @@ export function World({
     return placed;
   }, [blocks, streets, rand]);
 
+  const lampMaterial = useMemo(
+    () => new MeshStandardMaterial({ color: "#ffffff", emissive: LAMP_GLOW, emissiveIntensity: 0, flatShading: true }),
+    [],
+  );
+  useFrame(() => {
+    lampMaterial.emissiveIntensity = nightRef.current * GLOW_MAX;
+  });
+
   if (!showScenery) return null;
 
   return (
@@ -79,7 +91,7 @@ export function World({
       {/* Street lamps */}
       {lamps.map((l) => (
         <group key={l.key} position={[l.x, 0, l.z]}>
-          <InstancedVoxels voxels={lampVoxels()} voxelSize={LAMP_SIZE} />
+          <InstancedVoxels voxels={lampVoxels()} voxelSize={LAMP_SIZE} material={lampMaterial} />
         </group>
       ))}
     </group>
