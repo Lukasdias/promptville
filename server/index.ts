@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { Database } from "bun:sqlite";
-import { queryNeighborhood, sessionDetail } from "./db";
+import { queryNeighborhood, sessionDetail, sessionMessages } from "./db";
 
 export function defaultDbPath(): string {
   if (process.env.OPENCODE_DB_PATH) return process.env.OPENCODE_DB_PATH;
@@ -23,6 +23,13 @@ export function createHandler(
       if (url.pathname === "/api/neighborhood") {
         db ??= open();
         return Response.json(queryNeighborhood(db));
+      }
+      const mm = url.pathname.match(/^\/api\/session\/([^/]+)\/messages$/);
+      if (mm) {
+        db ??= open();
+        const id = decodeURIComponent(mm[1]);
+        if (!sessionDetail(db, id)) return Response.json({ error: "not found" }, { status: 404 });
+        return Response.json({ messages: sessionMessages(db, id) });
       }
       const m = url.pathname.match(/^\/api\/session\/([^/]+)$/);
       if (m) {
