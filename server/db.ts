@@ -289,3 +289,53 @@ export function sessionDetail(db: Database, sessionId: string): SessionDetail | 
   const base = sessionFromRow(row, "", { messageCount: 0, patchCount: 0, toolNames: [] });
   return { ...base, snippet: latestTextSnippet(db, sessionId) };
 }
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+  time: number;
+}
+
+function parseJson<T>(raw: string): T | null {
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+export function sessionMessages(db: Database, sessionId: string): ChatMessage[] {
+  const client = createDb(db);
+  const rows = client
+    .select({ id: message.id, time: message.timeCreated, data: message.data })
+    .from(message)
+    .where(eq(message.sessionId, sessionId))
+    .orderBy(asc(message.timeCreated))
+    .all();
+
+  const out: ChatMessage[] = [];
+  for (const row of rows) {
+    const meta = parseJson<{ role?: string }>(row.data);
+    const role = meta?.role === "user" ? "user" : meta?.role === "assistant" ? "assistant" : null;
+    if (!role) continue;
+
+    const parts = client
+      .select({ data: part.data })
+      .from(part)
+      .where(eq(part.messageId, row.id))
+      .orderBy(asc(part.timeCreated))
+      .all();
+
+    let text = "";
+    for (const p of parts) {
+      const pd = parseJson<{ type?: string; text?: string }>(p.data);
+      if (pd?.type === "text" && typeof pd.text === "string") text += pd.text;
+    }
+    text = text.trim();
+    if (!text) continue;
+
+    out.push({ id: row.id, role, text, time: row.time });
+  }
+  return out;
+}
