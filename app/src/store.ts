@@ -89,16 +89,18 @@ interface AppState {
   setTimeOfDay: (hours: number) => void;
   autoCycle: boolean;
   toggleAutoCycle: () => void;
+  chatOpen: boolean;
+  closeChat: () => void;
 }
 
 export const useApp = create<AppState>()(
   persist(
     (set) => ({
       selected: null,
-      select: (session) => set({ selected: session }),
+      select: (session) => set({ selected: session, chatOpen: true }),
       selectedBuilding: null,
-      selectBuilding: (building) => set({ selectedBuilding: building }),
-      clearSelection: () => set({ selected: null, selectedBuilding: null }),
+      selectBuilding: (building) => set({ selectedBuilding: building, chatOpen: false }),
+      clearSelection: () => set({ selected: null, selectedBuilding: null, chatOpen: false }),
       activity: {
         hospital: { visitors: 0, cars: 0 },
         police: { visitors: 0, cars: 0 },
@@ -141,6 +143,8 @@ export const useApp = create<AppState>()(
       setTimeOfDay: (hours) => set({ timeOfDay: ((hours % 24) + 24) % 24 }),
       autoCycle: true,
       toggleAutoCycle: () => set((s) => ({ autoCycle: !s.autoCycle })),
+      chatOpen: false,
+      closeChat: () => set({ chatOpen: false }),
     }),
     {
       name: "promptville-tweaks",
