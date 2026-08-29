@@ -1,29 +1,53 @@
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { MeshStandardMaterial } from "three";
+import {
+  AdditiveBlending,
+  Color,
+  Matrix4,
+  MeshStandardMaterial,
+  PlaneGeometry,
+  Quaternion,
+  ShaderMaterial,
+  Vector3,
+} from "three";
+import type { InstancedMesh } from "three";
 import { useNeighborhood } from "../../query";
 import { useCity } from "../../city";
-import { houseParams, houseWindowCells } from "../../house";
+import { houseParams, houseWindowCells, houseWindowGlows, type WindowGlow } from "../../house";
 import { WINDOW_COLOR, type Voxel } from "../../voxel";
 import { WINDOW_GLOW, GLOW_MAX } from "../../theme";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { nightRef } from "../../night";
 
+const GLOW_SCALE = 2.2;
+const GLOW_COLOR = "#ffb36b";
+const Z_AXIS = new Vector3(0, 0, 1);
+
+const glowVert = /* glsl */ `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+const glowFrag = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uIntensity;
+  varying vec2 vUv;
+  void main() {
+    float d = length(vUv - 0.5) * 2.0;
+    float a = smoothstep(1.0, 0.0, d);
+    a *= a;
+    gl_FragColor = vec4(uColor, a * uIntensity);
+  }
+`;
+
 export function LitWindows() {
   const { data } = useNeighborhood();
   const { blocks } = useCity();
-  const material = useMemo(
-    () =>
-      new MeshStandardMaterial({
-        color: WINDOW_COLOR,
-        emissive: WINDOW_GLOW,
-        emissiveIntensity: 0,
-        flatShading: true,
-      }),
-    [],
-  );
+  const glowRef = useRef<InstancedMesh>(null);
 
-  const voxels = useMemo<Voxel[]>(() => {
+  const solidCells = useMemo<Voxel[]>(() => {
     const out: Voxel[] = [];
     for (let b = 0; b < blocks.length; b++) {
       const block = blocks[b];
@@ -34,16 +58,83 @@ export function LitWindows() {
         const session = project.sessions[slot.index];
         if (!session) return;
         const hp = houseParams(session, b);
-        for (const w of houseWindowCells(hp, slot.x, slot.z)) out.push(w);
+        out.push(...houseWindowCells(hp, slot.x, slot.z));
       });
     }
     return out;
   }, [blocks, data]);
 
+  const glows = useMemo<WindowGlow[]>(() => {
+    const out: WindowGlow[] = [];
+    for (let b = 0; b < blocks.length; b++) {
+      const block = blocks[b];
+      if (block.kind === "plaza") continue;
+      const project = data?.projects.find((p) => p.id === block.projectId);
+      if (!project) continue;
+      block.houses.forEach((slot) => {
+        const session = project.sessions[slot.index];
+        if (!session) return;
+        const hp = houseParams(session, b);
+        out.push(...houseWindowGlows(hp, slot.x, slot.z));
+      });
+    }
+    return out;
+  }, [blocks, data]);
+
+  const solidMaterial = useMemo(
+    () =>
+      new MeshStandardMaterial({
+        color: WINDOW_COLOR,
+        emissive: WINDOW_GLOW,
+        emissiveIntensity: 0,
+        flatShading: true,
+      }),
+    [],
+  );
+
+  const glowGeometry = useMemo(() => new PlaneGeometry(1, 1), []);
+  const glowMaterial = useMemo(
+    () =>
+      new ShaderMaterial({
+        uniforms: { uColor: { value: new Color(GLOW_COLOR) }, uIntensity: { value: 0 } },
+        vertexShader: glowVert,
+        fragmentShader: glowFrag,
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+      }),
+    [],
+  );
+
+  useLayoutEffect(() => {
+    const mesh = glowRef.current;
+    if (!mesh) return;
+    const m = new Matrix4();
+    const q = new Quaternion();
+    const pos = new Vector3();
+    const scl = new Vector3();
+    glows.forEach((g, i) => {
+      pos.set(g.px, g.py, g.pz);
+      q.setFromUnitVectors(Z_AXIS, new Vector3(g.nx, g.ny, g.nz));
+      scl.set(g.scale * GLOW_SCALE, g.scale * GLOW_SCALE, 1);
+      m.compose(pos, q, scl);
+      mesh.setMatrixAt(i, m);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
+  }, [glows]);
+
   useFrame(() => {
-    material.emissiveIntensity = nightRef.current * GLOW_MAX;
+    solidMaterial.emissiveIntensity = nightRef.current * GLOW_MAX * 0.5;
+    glowMaterial.uniforms.uIntensity.value = nightRef.current * GLOW_MAX;
   });
 
-  if (voxels.length === 0) return null;
-  return <InstancedVoxels voxels={voxels} material={material} />;
+  if (solidCells.length === 0) return null;
+
+  return (
+    <group>
+      <InstancedVoxels voxels={solidCells} material={solidMaterial} />
+      <instancedMesh ref={glowRef} args={[glowGeometry, glowMaterial, glows.length]} frustumCulled={false} />
+    </group>
+  );
 }

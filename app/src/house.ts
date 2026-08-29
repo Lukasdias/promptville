@@ -80,6 +80,10 @@ function houseOptions(hp: HouseParams) {
   };
 }
 
+export function houseVoxelOptions(hp: HouseParams) {
+  return houseOptions(hp);
+}
+
 // Full house voxels (non-window structure + window cells).
 export function houseVoxelsFor(hp: HouseParams): Voxel[] {
   return houseVoxels(houseOptions(hp));
@@ -99,3 +103,31 @@ export function houseWindowCells(hp: HouseParams, x: number, z: number): Voxel[]
 // The window cells' world color key, used to strip them from the body mesh so
 // the glow layer owns them.
 export const WINDOW_CELL_COLOR = WINDOW_COLOR;
+
+export interface WindowGlow {
+  px: number;
+  py: number;
+  pz: number;
+  nx: number;
+  ny: number;
+  nz: number;
+  scale: number;
+}
+
+// Window cells with their outward-facing normal, in world space, so a glow
+// quad can face the same direction as the building facade.
+export function houseWindowGlows(hp: HouseParams, x: number, z: number): WindowGlow[] {
+  const half = Math.floor(hp.footprint / 2);
+  return windowVoxels(houseOptions(hp)).map((w) => {
+    const px = x + (w.x + 0.5) * hp.voxelScale - 0.5;
+    const py = (w.y + 0.5) * hp.voxelScale - 0.5;
+    const pz = z + (w.z + 0.5) * hp.voxelScale - 0.5;
+    let nx = 0;
+    let nz = 0;
+    if (w.z === half) nz = 1;
+    else if (w.z === -half) nz = -1;
+    else if (w.x === half) nx = 1;
+    else if (w.x === -half) nx = -1;
+    return { px, py, pz, nx, ny: 0, nz, scale: hp.voxelScale };
+  });
+}
