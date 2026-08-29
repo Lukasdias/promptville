@@ -14,12 +14,16 @@ function blendFor(t: number): number {
 }
 
 // How long after the startup SFX before the world OST fades in.
-const OST_DELAY_MS = 1200;
+const OST_DELAY_MS = 1000;
 
 // Global (non-positional) background music for Promptville. Mounted INSIDE the
-// Canvas because it uses useThree/useFrame/useLoader. Sequence on first load:
-//   play the one-shot start-up SFX once, then fade in the day/night OST loops
-//   (crossfaded by the town clock). The header <Music> button is a mute toggle.
+// Canvas because it uses useThree/useFrame/useLoader.
+//
+// It is NOT auto-played. The loading screen shows an explicit "enable sound"
+// button; clicking it (a real user gesture) flips `musicOn` in the store, which
+// is the browser permission that resumes the AudioContext and runs the sequence:
+//   one-shot start-up SFX once, then the day/night OST loops (crossfaded by the
+//   town clock). The header <Music> button is a mute toggle afterwards.
 export function MusicPlayer() {
   const musicOn = useApp((s) => s.musicOn);
   const camera = useThree((s) => s.camera);
@@ -33,8 +37,10 @@ export function MusicPlayer() {
   const dayRef = useRef<Audio | null>(null);
   const nightRef = useRef<Audio | null>(null);
   const sfxRef = useRef<Audio | null>(null);
+  const listenerRef = useRef<AudioListener | null>(null);
+  // Guards so the startup sequence runs exactly once.
   const startedRef = useRef(false);
-  const startedSfxRef = useRef(false);
+  const ostStartedRef = useRef(false);
 
   // One listener for the whole app, riding the camera.
   useEffect(() => {
@@ -54,38 +60,35 @@ export function MusicPlayer() {
     dayRef.current = day;
     nightRef.current = night;
     sfxRef.current = sfx;
+    listenerRef.current = listener;
 
     return () => {
       camera.remove(listener);
       dayRef.current = null;
       nightRef.current = null;
       sfxRef.current = null;
+      listenerRef.current = null;
     };
   }, [camera, dayBuffer, nightBuffer, sfxBuffer]);
 
-  // Kick off once the world is loaded: SFX first, OST after a short delay.
+  // The permission button (in the Splash) flips `musicOn` to true inside a click
+  // handler — a real user gesture. That is our trigger to run the sequence.
   useEffect(() => {
-    if (!loaded || startedRef.current) return;
-    startedRef.current = true;
-    // Play the one-shot SFX once (browsers usually allow this on load; if they
-    // block it, the music still starts on the first user gesture below).
-    void sfxRef.current?.play();
-    window.setTimeout(() => {
-      startedSfxRef.current = true;
-      void dayRef.current?.play();
-      void nightRef.current?.play();
-    }, OST_DELAY_MS);
-  }, [loaded]);
+    if (!musicOn || !loaded) return;
+    if (!startedRef.current) runSequence();
+  }, [musicOn, loaded]);
 
-  // Mute/unmute: pause the loops (SFX is one-shot, unaffected).
+  // Mute toggle (header button): pause/resume just the loops.
   useEffect(() => {
-    if (!startedSfxRef.current) return;
-    if (musicOn) {
-      void dayRef.current?.play();
-      void nightRef.current?.play();
-    } else {
-      dayRef.current?.pause();
-      nightRef.current?.pause();
+    const day = dayRef.current;
+    const night = nightRef.current;
+    if (!day || !night) return;
+    if (musicOn && ostStartedRef.current) {
+      day.play();
+      night.play();
+    } else if (!musicOn) {
+      day.pause();
+      night.pause();
     }
   }, [musicOn]);
 
@@ -100,4 +103,25 @@ export function MusicPlayer() {
   });
 
   return null;
+
+  function runSequence(): void {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    // This runs inside a user-gesture task; resume the context so `play()` works.
+    const ctx = listenerRef.current?.context;
+    const ready = ctx && ctx.state === "suspended" ? ctx.resume() : Promise.resolve();
+
+    void ready.then(() => {
+      const sfx = sfxRef.current;
+      if (sfx) sfx.play();
+    });
+    window.setTimeout(() => {
+      if (ostStartedRef.current) return;
+      ostStartedRef.current = true;
+      const day = dayRef.current;
+      const night = nightRef.current;
+      if (day) day.play();
+      if (night) night.play();
+    }, OST_DELAY_MS);
+  }
 }

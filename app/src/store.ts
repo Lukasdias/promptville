@@ -173,8 +173,10 @@ export const useApp = create<AppState>()(
       },
       autoCycle: true,
       toggleAutoCycle: () => set((s) => ({ autoCycle: !s.autoCycle })),
-      // Music autoplays on first load; the header button is a mute toggle.
-      musicOn: true,
+      // Starts silent. The loading splash shows an explicit "enable sound"
+      // button whose click grants browser audio permission and flips this true;
+      // the header button is a mute toggle afterwards.
+      musicOn: false,
       toggleMusic: () => set((s) => ({ musicOn: !s.musicOn })),
       chatOpen: false,
       closeChat: () => set({ chatOpen: false }),
