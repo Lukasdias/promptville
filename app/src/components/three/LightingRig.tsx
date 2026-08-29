@@ -67,6 +67,8 @@ export function LightingRig() {
     if (scene.fog) scene.fog.color.set(p.fog);
     scene.background = bgColor.current.set(p.top);
 
+    document.documentElement.style.setProperty("--sign-glow", (night * 0.8).toFixed(2));
+
     skyUniforms.uTop.value.set(p.top);
     skyUniforms.uHorizon.value.set(p.horizon);
     skyUniforms.uSunDir.value.set(sun.x, sun.y, sun.z);
