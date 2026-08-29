@@ -97,7 +97,7 @@ export const useApp = create<AppState>()(
   persist(
     (set) => ({
       selected: null,
-      select: (session) => set({ selected: session, chatOpen: true }),
+      select: (session) => set({ selected: session, chatOpen: true, navigatorOpen: false }),
       selectedBuilding: null,
       selectBuilding: (building) => set({ selectedBuilding: building, chatOpen: false }),
       clearSelection: () => set({ selected: null, selectedBuilding: null, chatOpen: false }),
@@ -121,7 +121,11 @@ export const useApp = create<AppState>()(
       resetTweaks: () => set({ tweaks: DEFAULT_TWEAKS }),
       navigatorOpen: false,
       toggleNavigator: () =>
-        set((s) => ({ navigatorOpen: !s.navigatorOpen, tweaksOpen: s.navigatorOpen ? s.tweaksOpen : false })),
+        set((s) => ({
+          navigatorOpen: !s.navigatorOpen,
+          tweaksOpen: s.navigatorOpen ? s.tweaksOpen : false,
+          chatOpen: s.navigatorOpen ? s.chatOpen : false,
+        })),
       search: "",
       setSearch: (v) => set({ search: v }),
       filters: EMPTY_FILTERS,
@@ -131,7 +135,12 @@ export const useApp = create<AppState>()(
       setSortKey: (k) => set({ sortKey: k }),
       searchFocusNonce: 0,
       focusSearch: () =>
-        set((s) => ({ navigatorOpen: true, tweaksOpen: false, searchFocusNonce: s.searchFocusNonce + 1 })),
+        set((s) => ({
+          navigatorOpen: true,
+          tweaksOpen: false,
+          chatOpen: false,
+          searchFocusNonce: s.searchFocusNonce + 1,
+        })),
       toasts: [],
       pushToast: (kind, message) => {
         const id = Date.now() + Math.random();

@@ -31,7 +31,7 @@ export function ChatSidebar() {
 
   return (
     <animated.aside
-      className="absolute right-4 top-20 bottom-16 z-30 flex w-96 max-w-[26rem] flex-col"
+      className="absolute left-4 top-20 bottom-16 z-30 flex w-96 max-w-[26rem] flex-col"
       style={{ opacity, transform: x.to((v) => `translateX(${v}px)`) }}
     >
       <div className="paper-card flex min-h-0 flex-1 flex-col overflow-hidden p-3 font-body text-ink">
