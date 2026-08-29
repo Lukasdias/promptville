@@ -13,6 +13,9 @@ import { Traffic } from "./Traffic";
 import { Crossers } from "./Crossers";
 import { CivicDistrict } from "./CivicDistrict";
 import { SelectedBanner } from "./SelectedBanner";
+import { Sky } from "./Sky";
+import { LightingRig } from "./LightingRig";
+import { LitWindows } from "./LitWindows";
 
 export function Scene() {
   const {
@@ -33,25 +36,15 @@ export function Scene() {
 
   return (
     <>
-      <color attach="background" args={["#aee6ff"]} />
+      <Sky extent={extent} />
+      <LightingRig />
       <fog attach="fog" args={["#aee6ff", 40, 120]} />
-      <hemisphereLight intensity={0.9} groundColor="#cfe8b0" />
-      <directionalLight
-        position={[18, 30, 10]}
-        intensity={1.4}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-far={90}
-        shadow-camera-left={-45}
-        shadow-camera-right={45}
-        shadow-camera-top={45}
-        shadow-camera-bottom={-45}
-      />
       <Terrain extent={extent} bounds={bounds} />
       <Ground blocks={blocks} />
       <Streets streets={renderStreets} />
       <Sidewalks streets={renderStreets} intersections={crosswalkIntersections} />
       <City />
+      <LitWindows />
       <World blocks={blocks} streets={renderStreets} />
       <Details blocks={blocks} streets={renderStreets} />
       <CivicDistrict civic={civic} />
