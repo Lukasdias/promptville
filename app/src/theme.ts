@@ -45,3 +45,27 @@ export const BUILDING_COLORS: Record<BuildingKind, { body: string; accent: strin
   bakery: { body: "#f3d9b1", accent: "#b8722f", roof: "#e8c79a" },
   petshop: { body: "#ffc9de", accent: "#4fd1c5", roof: "#f0c4ff" },
 };
+
+// Sky / atmosphere palette for the day-night cycle.
+export const SKY = {
+  dayTop: "#5fa8ff",
+  dayHorizon: "#bfe6ff",
+  dawnTop: "#7d7bd0",
+  dawnHorizon: "#ffb36b",
+  duskTop: "#6a5aa8",
+  duskHorizon: "#ff8c5a",
+  nightTop: "#0d1230",
+  nightHorizon: "#1b2350",
+  fog: "#aee6ff",
+} as const;
+
+export const SUN_COLOR_DAY = "#fff4d6";
+export const SUN_INTENSITY_DAY = 1.4;
+export const HEMI_INTENSITY_DAY = 0.9;
+export const MOON_INTENSITY_NIGHT = 0.35;
+export const AMBIENT_NIGHT = 0.12;
+
+export const LAMP_GLOW = "#ffd98a";
+export const WINDOW_GLOW = "#ffcf7a";
+export const SIGN_GLOW = "#ffe1a6";
+export const GLOW_MAX = 1.6;
