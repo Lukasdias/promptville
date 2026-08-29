@@ -23,6 +23,7 @@ import { GroundFog } from "./GroundFog";
 import { LightingRig } from "./LightingRig";
 import { LitWindows } from "./LitWindows";
 import { HouseNightLights } from "./HouseNightLights";
+import { Crowd } from "./Crowd";
 
 export function Scene() {
   const {
@@ -63,6 +64,7 @@ export function Scene() {
       <Details blocks={blocks} streets={renderStreets} />
       <CivicDistrict civic={civic} />
       <People />
+      <Crowd />
       <Traffic
         streets={renderStreets}
         intersections={intersections}
