@@ -50,6 +50,8 @@ export interface Stats {
 export interface Neighborhood {
   stats: Stats;
   projects: ProjectData[];
+  // Short real lines for the crowd NPC chatter bubbles.
+  chatter: string[];
 }
 
 export interface ChatMessage {

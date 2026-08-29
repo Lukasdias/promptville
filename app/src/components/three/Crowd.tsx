@@ -6,19 +6,23 @@ import { crowdLayout } from "../../crowd";
 import { crowd } from "../../config";
 import { useApp } from "../../store";
 import { useCity } from "../../city";
+import { useNeighborhood } from "../../query";
 import { InstancedVoxels } from "./InstancedVoxels";
 
 const PERSON_SIZE = 0.15;
 const BUBBLE_H = 1.2;
 
-const LINES = [
-  ["Nice weather today, huh?", "Yeah, real cozy."],
-  ["Did you see the new plaza?", "So nice."],
-  ["This town grows every day.", "Told you!"],
+// Fallback bubbles when there is no real DB content yet.
+const FALLBACK_LINES = [
+  "Nice weather today, huh?",
+  "Did you see the new plaza?",
+  "This town grows every day.",
 ];
 
-function Bubble({ seed, anchor }: { seed: number; anchor: { x: number; z: number } }) {
-  const pair = LINES[seed % LINES.length]!;
+function Bubble({ seed, anchor, lines }: { seed: number; anchor: { x: number; z: number }; lines: string[] }) {
+  // Pick a starting line, then advance to the next real snippet each cycle so a
+  // bubble cycles through the actual chatter instead of sticking on one quote.
+  const [idx, setIdx] = useState(seed % lines.length);
   // React state drives visibility — a ref would not re-render the JSX.
   const [visible, setVisible] = useState(true);
   const t = useRef(0);
@@ -27,6 +31,9 @@ function Bubble({ seed, anchor }: { seed: number; anchor: { x: number; z: number
     const cycle = crowd.bubbleDuration + crowd.quietDuration;
     const on = (t.current % cycle) < crowd.bubbleDuration;
     if (on !== visible) setVisible(on);
+    // On each new visible window, step to the next line (cycles back).
+    const next = on ? Math.floor(t.current / cycle) % lines.length : idx;
+    if (next !== idx) setIdx(next);
   });
   return (
     <group position={[anchor.x, BUBBLE_H, anchor.z]}>
@@ -49,7 +56,7 @@ function Bubble({ seed, anchor }: { seed: number; anchor: { x: number; z: number
               textOverflow: "ellipsis",
             }}
           >
-            {pair[0]}
+            {lines[idx % lines.length]}
           </div>
         </Html>
       )}
@@ -60,7 +67,15 @@ function Bubble({ seed, anchor }: { seed: number; anchor: { x: number; z: number
 export function Crowd() {
   const { blocks, renderStreets } = useCity();
   const showPeople = useApp((s) => s.tweaks.showPeople);
+  const { data } = useNeighborhood();
   const layout = useMemo(() => crowdLayout(blocks, renderStreets), [blocks, renderStreets]);
+
+  // Real short lines from the opencode DB; fall back to the cozy pool when empty.
+  const lines = useMemo(() => {
+    const fromDb = data?.chatter ?? [];
+    const pool = fromDb.length > 0 ? fromDb : FALLBACK_LINES;
+    return pool.length > 0 ? pool : FALLBACK_LINES;
+  }, [data]);
 
   // Batch all standing people by shirt colour → one InstancedVoxels per colour.
   const byColor = useMemo(() => {
@@ -83,7 +98,7 @@ export function Crowd() {
         <InstancedVoxels key={shirt} voxels={voxels} voxelSize={PERSON_SIZE} />
       ))}
       {layout.clusters.filter((c) => c.talking).map((c, i) => (
-        <Bubble key={i} seed={i * 7 + 1} anchor={c.anchor} />
+        <Bubble key={i} seed={i * 7 + 1} anchor={c.anchor} lines={lines} />
       ))}
     </group>
   );

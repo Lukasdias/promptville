@@ -58,6 +58,8 @@ export interface Stats {
 export interface Neighborhood {
   stats: Stats;
   projects: ProjectData[];
+  // Short real lines for the crowd NPC chatter bubbles.
+  chatter: string[];
 }
 
 export function openDb(path: string): Database {
@@ -231,6 +233,7 @@ export function queryNeighborhood(db: Database): Neighborhood {
   return {
     stats,
     projects: [...projects.values()].sort((a, b) => b.sessions.length - a.sessions.length),
+    chatter: crowdChatter(db),
   };
 }
 
@@ -280,6 +283,37 @@ function textFromPart(raw: string): string {
 
 function clampSnippet(t: string): string {
   return t.length > 140 ? `${t.slice(0, 140).trimEnd()}…` : t;
+}
+
+// Short real lines for the crowd NPC chatter bubbles: the most recent user /
+// assistant text parts, cleaned, deduped, and clamped to bubble width. Non-text
+// parts (tools, patches) are naturally excluded by type === "text". Falls back
+// to a tiny seed of cozy lines when the corpus is empty.
+const CHATTER_LIMIT = 8;
+const CHATTER_MAX_LEN = 64;
+const FALLBACK_CHATTER = ["This town grows every day.", "The plaza is looking nice.", "Nice weather, huh?"];
+
+export function crowdChatter(db: Database): string[] {
+  const client = createDb(db);
+  const parts = client
+    .select({ timeCreated: part.timeCreated, data: part.data })
+    .from(part)
+    .orderBy(desc(part.timeCreated))
+    .all();
+
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const p of parts) {
+    const t = textFromPart(p.data);
+    if (!t) continue;
+    const clean = t.length > CHATTER_MAX_LEN ? `${t.slice(0, CHATTER_MAX_LEN).trimEnd()}…` : t;
+    const key = clean.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(clean);
+    if (out.length >= CHATTER_LIMIT) break;
+  }
+  return out.length > 0 ? out : [...FALLBACK_CHATTER];
 }
 
 export function sessionDetail(db: Database, sessionId: string): SessionDetail | null {

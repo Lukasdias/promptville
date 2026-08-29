@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { queryNeighborhood, ACTIVE_WINDOW_MS } from "./db";
+import { queryNeighborhood, crowdChatter, ACTIVE_WINDOW_MS } from "./db";
 
 function makeDb(): Database {
   const db = new Database(":memory:");
@@ -77,5 +77,44 @@ describe("queryNeighborhood aggregation", () => {
     seed();
     const { stats } = queryNeighborhood(db);
     expect(stats.totalTodoCount).toBe(1);
+  });
+});
+
+describe("crowdChatter", () => {
+  test("collects recent clean text parts, deduped, as an array", () => {
+    db.exec(`INSERT INTO project (id, worktree, name) VALUES ('p1','/a','A')`);
+    db.exec(`INSERT INTO session (id, project_id, title, time_created, time_updated, slug, directory) VALUES
+      ('s1','p1','One',${NOW},${NOW},'one','/a')`);
+    db.exec(`INSERT INTO message (id, session_id, time_created, time_updated, data) VALUES
+      ('m1','s1',${NOW},${NOW},'{"role":"user"}'),
+      ('m2','s1',${NOW},${NOW},'{"role":"assistant"}')`);
+    db.exec(`INSERT INTO part (id, message_id, session_id, time_created, time_updated, data) VALUES
+      ('p1','m1','s1',${NOW},${NOW},'{"type":"text","text":"Make the lamp glow at night"}'),
+      ('p2','m1','s1',${NOW},${NOW},'{"type":"text","text":"Make the lamp glow at night"}'),
+      ('p3','m2','s1',${NOW},${NOW},'{"type":"text","text":"Done — the lamp now glows."}'),
+      ('p4','m2','s1',${NOW},${NOW},'{"type":"tool","tool":"edit"}')`);
+    const chatter = crowdChatter(db);
+    expect(chatter.length).toBeGreaterThanOrEqual(2);
+    expect(chatter).toContain("Make the lamp glow at night");
+    expect(chatter).toContain("Done — the lamp now glows.");
+    // Deduped: the repeated line appears once.
+    expect(chatter.filter((l) => l === "Make the lamp glow at night")).toHaveLength(1);
+  });
+
+  test("falls back to cozy defaults when there are no text parts", () => {
+    seed();
+    expect(crowdChatter(db).length).toBeGreaterThan(0);
+  });
+
+  test("is exposed on the neighborhood payload", () => {
+    db.exec(`INSERT INTO project (id, worktree, name) VALUES ('p1','/a','A')`);
+    db.exec(`INSERT INTO session (id, project_id, title, time_created, time_updated, slug, directory) VALUES
+      ('s1','p1','One',${NOW},${NOW},'one','/a')`);
+    db.exec(`INSERT INTO message (id, session_id, time_created, time_updated, data) VALUES
+      ('m1','s1',${NOW},${NOW},'{"role":"user"}')`);
+    db.exec(`INSERT INTO part (id, message_id, session_id, time_created, time_updated, data) VALUES
+      ('p1','m1','s1',${NOW},${NOW},'{"type":"text","text":"hello world"}')`);
+    const { chatter } = queryNeighborhood(db);
+    expect(chatter).toContain("hello world");
   });
 });
