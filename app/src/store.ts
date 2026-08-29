@@ -100,6 +100,8 @@ interface AppState {
   setTimeOfDay: (hours: number) => void;
   autoCycle: boolean;
   toggleAutoCycle: () => void;
+  musicOn: boolean;
+  toggleMusic: () => void;
   chatOpen: boolean;
   closeChat: () => void;
 }
@@ -171,6 +173,10 @@ export const useApp = create<AppState>()(
       },
       autoCycle: true,
       toggleAutoCycle: () => set((s) => ({ autoCycle: !s.autoCycle })),
+      // Music is off by default (browsers block autoplay); the header button
+      // starts it, and the player crossfades day/night tracks on the clock.
+      musicOn: false,
+      toggleMusic: () => set((s) => ({ musicOn: !s.musicOn })),
       chatOpen: false,
       closeChat: () => set({ chatOpen: false }),
     }),
