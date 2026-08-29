@@ -10,7 +10,7 @@ import { SUN_INTENSITY_DAY, HEMI_INTENSITY_DAY, MOON_INTENSITY_NIGHT } from "../
 
 const SUN_DIST = 30;
 const MOON_DIST = 30;
-const DAY_HOURS_PER_SECOND = 1;
+const DAY_HOURS_PER_SECOND = 0.25;
 const SLIDER_CADENCE = 0.25;
 
 export function LightingRig() {
