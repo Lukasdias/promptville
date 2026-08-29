@@ -52,4 +52,15 @@ export interface Neighborhood {
   projects: ProjectData[];
 }
 
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+  time: number;
+}
+
+export interface ChatTranscript {
+  messages: ChatMessage[];
+}
+
 export type BuildingKind = "hospital" | "police" | "fire" | "mall" | "bakery" | "petshop";

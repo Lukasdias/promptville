@@ -1,5 +1,5 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { fetchNeighborhood, fetchSession } from "./api";
+import { fetchNeighborhood, fetchSession, fetchMessages } from "./api";
 
 export const neighborhoodQueryOptions = queryOptions({
   queryKey: ["neighborhood"],
@@ -29,6 +29,19 @@ export function useSession(id: string | null | undefined) {
     },
     enabled: Boolean(id),
     staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useMessages(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ["messages", id ?? "none"],
+    queryFn: () => {
+      if (!id) return Promise.reject(new Error("no session"));
+      return fetchMessages(id);
+    },
+    enabled: Boolean(id),
+    staleTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
   });
 }
