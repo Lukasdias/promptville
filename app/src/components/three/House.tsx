@@ -3,7 +3,6 @@ import { useFrame } from "@react-three/fiber";
 import { Float, Html } from "@react-three/drei";
 import type { Group } from "three";
 import { houseParams, houseVoxelsFor } from "../../house";
-import { WINDOW_COLOR } from "../../voxel";
 import { InstancedVoxels } from "./InstancedVoxels";
 import { useApp } from "../../store";
 import { isPanActive } from "../../pan";
@@ -29,11 +28,7 @@ export function House({
   const hp = useMemo(() => houseParams(session, paletteIndex), [session, paletteIndex]);
   const voxelScale = hp.voxelScale;
 
-  // Structure voxels minus the window cells (the night-glow layer renders those).
-  const voxels = useMemo(
-    () => houseVoxelsFor(hp).filter((v) => v.color !== WINDOW_COLOR),
-    [hp],
-  );
+  const voxels = useMemo(() => houseVoxelsFor(hp), [hp]);
   const delay = useMemo(() => (session.id.charCodeAt(session.id.length - 1) % 30) / 60, [session.id]);
   const start = useRef<number | null>(null);
   const isSelected = selected?.id === session.id;

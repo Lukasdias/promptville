@@ -4,7 +4,6 @@ import {
   AdditiveBlending,
   Color,
   Matrix4,
-  MeshStandardMaterial,
   PlaneGeometry,
   Quaternion,
   ShaderMaterial,
@@ -13,10 +12,8 @@ import {
 import type { InstancedMesh } from "three";
 import { useNeighborhood } from "../../query";
 import { useCity } from "../../city";
-import { houseParams, houseWindowCells, houseWindowGlows, type WindowGlow } from "../../house";
-import { WINDOW_COLOR, type Voxel } from "../../voxel";
-import { WINDOW_GLOW, GLOW_MAX } from "../../theme";
-import { InstancedVoxels } from "./InstancedVoxels";
+import { houseParams, houseWindowGlows, type WindowGlow } from "../../house";
+import { GLOW_MAX } from "../../theme";
 import { nightRef } from "../../night";
 
 const GLOW_SCALE = 2.2;
@@ -47,23 +44,6 @@ export function LitWindows() {
   const { blocks } = useCity();
   const glowRef = useRef<InstancedMesh>(null);
 
-  const solidCells = useMemo<Voxel[]>(() => {
-    const out: Voxel[] = [];
-    for (let b = 0; b < blocks.length; b++) {
-      const block = blocks[b];
-      if (block.kind === "plaza") continue;
-      const project = data?.projects.find((p) => p.id === block.projectId);
-      if (!project) continue;
-      block.houses.forEach((slot) => {
-        const session = project.sessions[slot.index];
-        if (!session) return;
-        const hp = houseParams(session, b);
-        out.push(...houseWindowCells(hp, slot.x, slot.z));
-      });
-    }
-    return out;
-  }, [blocks, data]);
-
   const glows = useMemo<WindowGlow[]>(() => {
     const out: WindowGlow[] = [];
     for (let b = 0; b < blocks.length; b++) {
@@ -80,17 +60,6 @@ export function LitWindows() {
     }
     return out;
   }, [blocks, data]);
-
-  const solidMaterial = useMemo(
-    () =>
-      new MeshStandardMaterial({
-        color: WINDOW_COLOR,
-        emissive: WINDOW_GLOW,
-        emissiveIntensity: 0,
-        flatShading: true,
-      }),
-    [],
-  );
 
   const glowGeometry = useMemo(() => new PlaneGeometry(1, 1), []);
   const glowMaterial = useMemo(
@@ -125,16 +94,12 @@ export function LitWindows() {
   }, [glows]);
 
   useFrame(() => {
-    solidMaterial.emissiveIntensity = nightRef.current * GLOW_MAX * 0.5;
     glowMaterial.uniforms.uIntensity.value = nightRef.current * GLOW_MAX;
   });
 
-  if (solidCells.length === 0) return null;
+  if (glows.length === 0) return null;
 
   return (
-    <group>
-      <InstancedVoxels voxels={solidCells} material={solidMaterial} />
-      <instancedMesh ref={glowRef} args={[glowGeometry, glowMaterial, glows.length]} frustumCulled={false} />
-    </group>
+    <instancedMesh ref={glowRef} args={[glowGeometry, glowMaterial, glows.length]} frustumCulled={false} />
   );
 }
