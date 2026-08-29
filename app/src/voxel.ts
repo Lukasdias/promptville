@@ -186,6 +186,7 @@ export interface HouseVoxelOptions {
   windows?: boolean;
   sideWindows?: boolean;
   antenna?: boolean;
+  windowRows?: number;
 }
 
 export function houseVoxels(o: HouseVoxelOptions): Voxel[] {
@@ -221,6 +222,10 @@ export function houseVoxels(o: HouseVoxelOptions): Voxel[] {
   if (o.windows !== false && o.walls >= 4) {
     push(-2, 2, hd, window);
     push(2, 2, hd, window);
+    if ((o.windowRows ?? 1) > 1 && o.walls >= 5) {
+      push(-2, 3, hd, window);
+      push(2, 3, hd, window);
+    }
   }
 
   // Side window columns (mansion / skyscraper)

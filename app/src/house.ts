@@ -1,6 +1,7 @@
 import { houseScale } from "./layout";
 import { houseVoxels, windowVoxels, type Voxel, WINDOW_COLOR } from "./voxel";
 import { MODEL_ROOF, PROJECT_PALETTE, UNKNOWN_ROOF } from "./theme";
+import { houseWindowRows } from "./layered";
 import type { SessionData } from "./types";
 
 export type HouseKind = "cottage" | "house" | "mansion" | "skyscraper";
@@ -46,6 +47,7 @@ export interface HouseParams {
   body: string;
   roof: string;
   idCode: number;
+  windowRows: number;
 }
 
 export function houseParams(session: SessionData, paletteIndex: number): HouseParams {
@@ -62,6 +64,7 @@ export function houseParams(session: SessionData, paletteIndex: number): HousePa
     body: PROJECT_PALETTE[paletteIndex % PROJECT_PALETTE.length],
     roof: session.model ? (MODEL_ROOF[session.model] ?? UNKNOWN_ROOF) : UNKNOWN_ROOF,
     idCode: session.id.charCodeAt(0),
+    windowRows: houseWindowRows(session.messageCount),
   };
 }
 
@@ -77,6 +80,7 @@ function houseOptions(hp: HouseParams) {
     windows: hp.kind !== "cottage",
     sideWindows: hp.kind === "mansion" || hp.kind === "skyscraper",
     antenna: hp.kind === "skyscraper",
+    windowRows: hp.windowRows,
   };
 }
 
