@@ -173,9 +173,8 @@ export const useApp = create<AppState>()(
       },
       autoCycle: true,
       toggleAutoCycle: () => set((s) => ({ autoCycle: !s.autoCycle })),
-      // Music is off by default (browsers block autoplay); the header button
-      // starts it, and the player crossfades day/night tracks on the clock.
-      musicOn: false,
+      // Music autoplays on first load; the header button is a mute toggle.
+      musicOn: true,
       toggleMusic: () => set((s) => ({ musicOn: !s.musicOn })),
       chatOpen: false,
       closeChat: () => set({ chatOpen: false }),
