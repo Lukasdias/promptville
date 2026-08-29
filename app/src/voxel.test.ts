@@ -19,6 +19,11 @@ import {
   coneVoxels,
   trafficLightVoxels,
   publicBuildingVoxels,
+  workshopVoxels,
+  parkVoxels,
+  landmarkVoxels,
+  todoSignVoxels,
+  markerVoxels,
   CROSS_RED,
   SIREN_BLUE,
   GARAGE_DARK,
@@ -275,5 +280,43 @@ describe("publicBuildingVoxels", () => {
     const { footprint, walls } = BUILDING_LAYOUT.petshop;
     const voxels = publicBuildingVoxels({ kind: "petshop", body: c.body, accent: c.accent, roof: c.roof, walls, width: footprint, depth: footprint });
     expect(voxels.some((v) => v.color === c.accent && v.y === 2)).toBe(true);
+  });
+});
+
+describe("layered city blueprints", () => {
+  test("workshop is a small hollow shed within bounds", () => {
+    const voxels = workshopVoxels("#7fb6ff");
+    expect(voxels.length).toBeGreaterThan(0);
+    for (const v of voxels) {
+      expect(Math.abs(v.x)).toBeLessThanOrEqual(3);
+      expect(Math.abs(v.z)).toBeLessThanOrEqual(3);
+      expect(v.y).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  test("park grows with size and includes water", () => {
+    const small = parkVoxels(1);
+    const big = parkVoxels(4);
+    expect(big.length).toBeGreaterThan(small.length);
+    expect(big.some((v) => v.color === FOUNTAIN_WATER)).toBe(true);
+  });
+
+  test("landmark height matches requested height and tops with a glow", () => {
+    const voxels = landmarkVoxels(6, "#ff7f50", "#ffd98a");
+    const tops = voxels.filter((v) => v.y === 5);
+    expect(tops.some((v) => v.color === "#ffd98a")).toBe(true);
+    for (const v of voxels) expect(v.y).toBeLessThanOrEqual(5);
+  });
+
+  test("todo sign has a pole and board", () => {
+    const voxels = todoSignVoxels();
+    expect(voxels.filter((v) => v.y === 3)).toHaveLength(3);
+    expect(voxels.some((v) => v.color === "#ffd24a")).toBe(true);
+  });
+
+  test("marker voxels stack vertically", () => {
+    const voxels = markerVoxels("#ff5252");
+    expect(voxels.length).toBeGreaterThan(1);
+    expect(voxels.every((v) => v.color === "#ff5252")).toBe(true);
   });
 });
