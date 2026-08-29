@@ -17,11 +17,18 @@ there is no mutation of opencode-owned data.
 
 ## Existing Idiom (must be preserved)
 
-- Projects = city blocks (`layout.ts`), sessions = houses (`House.tsx`).
+- Projects = city blocks (`layout.ts`), sessions = houses.
 - Everything is **voxel-based**: one `InstancedMesh` per object via
-  `InstancedVoxels`, using blueprints in `app/src/voxel.ts`.
-- Layout is **deterministic and pure** — `layoutCity`, `houseScale` are pure
-  functions tested like `app/src/layout.test.ts` patterns.
+  `InstancedVoxels`, using blueprints in `app/src/voxel.ts`. `InstancedVoxels`
+  now accepts a shared `material` prop (used for lamp/night glow).
+- Geometry derives from a single source of truth: `app/src/city.ts`
+  `useCity()`. New scene pieces read from it, never duplicate layout.
+- House anatomy is centralized in `app/src/house.ts`: `houseParams`,
+  `houseVoxelsFor`, `houseWindowCells`, `houseWindowGlows`. House **windows are
+  separate glow quads** owned by `LitWindows.tsx`, not baked into the body mesh.
+- **Day-night system**: `nightRef`/`clockRef` in `app/src/night.ts`, driven by
+  `LightingRig`. Night glow for windows/lamps/signs rolls up via `nightRef *
+  GLOW_MAX`. `frameloop="always"`.
 - `frameloop="always"` on Canvas. Never `setState` in `useFrame` — mutate refs.
 - All scene glass panels paper-card style, Fonts Fredoka + Nunito only.
 - Server opens the opencode DB read-only (`readonly: true`), never mutates.
@@ -68,24 +75,28 @@ so the client keeps a single fetch.
 | Tool calls | **Workshops** | one small service building per top tool (bash/edit/write/read/grep; colors from existing `tool`-ish palette) along the block's inner edge; tool count drives how many appear |
 | Todos | **Parks** | green voxel patch (trees + bench + fountain) per block with active todos; todo count → park size |
 | Project cost | **Landmark tower** | one tower per block, height = cost (clamped), rises above the houses |
-| Per-session messages | **House windows** | `messageCount` → window rows/columns |
-| Per-session patches | **Roof accent** | `patchCount`/`diffAdditions` → roof stripe/chimney marking heavy-change sessions |
+| Per-session messages | **House windows** | `messageCount` → window rows/columns in `house.ts` `houseWindowGlows` (so `LitWindows` picks them up for night glow) |
+| Per-session patches | **Roof accent** | `patchCount`/`diffAdditions` → a colored roof stripe / extra chimney marking heavy-change sessions |
 
-All are new voxel blueprint functions in `app/src/voxel.ts` following the
+New voxel blueprint functions go in `app/src/voxel.ts` following the
 `voxel-forms` skill (declarative primitives → `Voxel[]`), rendered via
-`InstancedVoxels`.
+`InstancedVoxels`. The **house window** change must flow through `house.ts`
+(`houseParams`/`houseWindowGlows`) and `LitWindows.tsx` — not by adding windows
+to the body mesh, which `LitWindows` now strips out.
 
 ## 3. In-City Signaling Layer (new)
 
 | Signal | Element | Behavior |
 |--------|---------|----------|
 | **Block beacon** | Floating `Html` card above each block's landmark tower | Paper-card style (matches `DetailCard`, Nunito). Shows project name, session count, cost, top tools, todos. Reveal on hover/dwell; full when selected. |
-| **Activity glow** | Colored pulsing voxel beacon on the landmark | `useFrame`-driven pulse (mutate ref, never `setState`). Brighter/faster for high-cost or high-tool blocks; color coded by top model (reuse `MODEL_ROOF` palette). |
+| **Activity glow** | Additive glow mesh on the landmark (like `LitWindows`/lamps) | `useFrame`-driven, rolled up by `nightRef * GLOW_MAX`, so it comes alive at night. Color coded by top model (reuse `MODEL_ROOF` palette). Alpha-pulse via a shared ref — never `setState`. |
 | **Heavy-change marker** | Over a house | Sessions with many patches or high diffs get a small animated chevron/`!` sign floating above the roof. |
 | **Todo park sign** | Over the park | Small labeled sign (`TODOS`) + count. |
 
-Reuse the drei `<Html>` + `Float` idiom from `House.tsx` and paper-card styling
-from HUD.
+Reuse the drei `<Html>` + `Float` idiom from `House.tsx`, the additive-glow
+shader pattern from `LitWindows.tsx`, paper-card styling from HUD, and the
+`nightRef`/`GLOW_MAX` night integration. Add a shared `material`-based glow
+component so beacons/signs glow at night without re-rendering.
 
 ## 4. People = Active-Session Citizens
 
@@ -95,6 +106,9 @@ Replace the current one-person-outside-every-house in `People.tsx` with
 - A person appears only for a house whose session is **active**
   (`timeUpdated` within `ACTIVE_WINDOW_MS`, ~48h) or the **currently selected**
   session. All other blocks are quiet.
+- `People.tsx` currently reads only `useCity()` blocks; it must also read the
+  session data (via `useNeighborhood()` / the `selected` session) to know each
+  block's `timeUpdated`, and slice the map of `block.houses` accordingly.
 - The citizen sits by the house door / nudges toward the plaza.
 - Optional subtle motion: a short walk loop driven by `useFrame` on a ref (no
   `setState`), so a citizen feels alive rather than planted.
@@ -112,8 +126,11 @@ This turns people from static decoration into a "who is working now" signal.
 - `block beacon` / `park sign` / `heavy-change marker` are informational
   (pointer-events:none where appropriate) — they do not steal clicks from the
   underlying house.
-- People and signaling must respect the existing `tweaks` toggles
-  (`showPeople`, and a new `showSignals` toggle).
+- People and signaling must respect the existing `tweaks` toggles. Add a new
+  `showSignals` boolean. Because `store.ts` uses `zustand persist` with a
+  `merge`/`partialize`, `showSignals` must be added to all three places: the
+  `Tweaks` interface, `DEFAULT_TWEAKS`, and the `merge` spread so persisted
+  state can't wipe the default.
 
 ## 6. Testing
 
