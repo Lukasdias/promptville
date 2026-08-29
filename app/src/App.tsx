@@ -11,6 +11,7 @@ import { LegendCard } from "./components/hud/LegendCard";
 import { LoadingState } from "./components/hud/LoadingState";
 import { MissingState } from "./components/hud/MissingState";
 import { Toasts } from "./components/hud/Toasts";
+import { ChatSidebar } from "./components/hud/ChatSidebar";
 import { NavigatorPanel } from "./components/navigator/NavigatorPanel";
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
       </Canvas>
       <Header />
       <NavigatorPanel />
+      <ChatSidebar />
       <StatsPanel />
       <DetailCard />
       <HintBar />
