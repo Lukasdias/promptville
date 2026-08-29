@@ -25,6 +25,7 @@ export interface Tweaks {
   showScenery: boolean;
   showMountains: boolean;
   showBuildings: boolean;
+  showSignals: boolean;
 }
 
 export interface Toast {
@@ -52,6 +53,7 @@ export const DEFAULT_TWEAKS: Tweaks = {
   showScenery: true,
   showMountains: true,
   showBuildings: true,
+  showSignals: true,
 };
 
 interface AppState {
@@ -83,16 +85,22 @@ interface AppState {
   toasts: Toast[];
   pushToast: (kind: Toast["kind"], message: string) => void;
   dismissToast: (id: number) => void;
+  timeOfDay: number;
+  setTimeOfDay: (hours: number) => void;
+  autoCycle: boolean;
+  toggleAutoCycle: () => void;
+  chatOpen: boolean;
+  closeChat: () => void;
 }
 
 export const useApp = create<AppState>()(
   persist(
     (set) => ({
       selected: null,
-      select: (session) => set({ selected: session }),
+      select: (session) => set({ selected: session, chatOpen: true, navigatorOpen: false }),
       selectedBuilding: null,
-      selectBuilding: (building) => set({ selectedBuilding: building }),
-      clearSelection: () => set({ selected: null, selectedBuilding: null }),
+      selectBuilding: (building) => set({ selectedBuilding: building, chatOpen: false }),
+      clearSelection: () => set({ selected: null, selectedBuilding: null, chatOpen: false }),
       activity: {
         hospital: { visitors: 0, cars: 0 },
         police: { visitors: 0, cars: 0 },
@@ -113,7 +121,11 @@ export const useApp = create<AppState>()(
       resetTweaks: () => set({ tweaks: DEFAULT_TWEAKS }),
       navigatorOpen: false,
       toggleNavigator: () =>
-        set((s) => ({ navigatorOpen: !s.navigatorOpen, tweaksOpen: s.navigatorOpen ? s.tweaksOpen : false })),
+        set((s) => ({
+          navigatorOpen: !s.navigatorOpen,
+          tweaksOpen: s.navigatorOpen ? s.tweaksOpen : false,
+          chatOpen: s.navigatorOpen ? s.chatOpen : false,
+        })),
       search: "",
       setSearch: (v) => set({ search: v }),
       filters: EMPTY_FILTERS,
@@ -123,7 +135,12 @@ export const useApp = create<AppState>()(
       setSortKey: (k) => set({ sortKey: k }),
       searchFocusNonce: 0,
       focusSearch: () =>
-        set((s) => ({ navigatorOpen: true, tweaksOpen: false, searchFocusNonce: s.searchFocusNonce + 1 })),
+        set((s) => ({
+          navigatorOpen: true,
+          tweaksOpen: false,
+          chatOpen: false,
+          searchFocusNonce: s.searchFocusNonce + 1,
+        })),
       toasts: [],
       pushToast: (kind, message) => {
         const id = Date.now() + Math.random();
@@ -131,6 +148,12 @@ export const useApp = create<AppState>()(
         setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 2600);
       },
       dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+      timeOfDay: 12,
+      setTimeOfDay: (hours) => set({ timeOfDay: ((hours % 24) + 24) % 24 }),
+      autoCycle: true,
+      toggleAutoCycle: () => set((s) => ({ autoCycle: !s.autoCycle })),
+      chatOpen: false,
+      closeChat: () => set({ chatOpen: false }),
     }),
     {
       name: "promptville-tweaks",
@@ -139,6 +162,8 @@ export const useApp = create<AppState>()(
         navigatorOpen: s.navigatorOpen,
         filters: s.filters,
         sortKey: s.sortKey,
+        timeOfDay: s.timeOfDay,
+        autoCycle: s.autoCycle,
       }),
       merge: (persisted, current) => ({
         ...current,

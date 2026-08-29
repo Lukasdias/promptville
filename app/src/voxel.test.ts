@@ -19,6 +19,7 @@ import {
   coneVoxels,
   trafficLightVoxels,
   publicBuildingVoxels,
+  landmarkVoxels,
   CROSS_RED,
   SIREN_BLUE,
   GARAGE_DARK,
@@ -275,5 +276,19 @@ describe("publicBuildingVoxels", () => {
     const { footprint, walls } = BUILDING_LAYOUT.petshop;
     const voxels = publicBuildingVoxels({ kind: "petshop", body: c.body, accent: c.accent, roof: c.roof, walls, width: footprint, depth: footprint });
     expect(voxels.some((v) => v.color === c.accent && v.y === 2)).toBe(true);
+  });
+});
+
+describe("layered city blueprints", () => {
+  test("landmark is a thin single-column spire that reaches the requested height", () => {
+    const voxels = landmarkVoxels(6, "#ff7f50", "#ffd98a");
+    expect(voxels).toHaveLength(6);
+    for (const v of voxels) {
+      expect(v.x).toBe(0);
+      expect(v.z).toBe(0);
+      expect(v.y).toBeGreaterThanOrEqual(0);
+      expect(v.y).toBeLessThanOrEqual(5);
+    }
+    expect(voxels[5].color).toBe("#ffd98a");
   });
 });

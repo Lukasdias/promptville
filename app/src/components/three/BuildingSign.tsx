@@ -6,7 +6,7 @@ const SIGN_CSS = {
   background: "#fff6e5",
   border: "3px solid #4a4453",
   borderRadius: 12,
-  boxShadow: "4px 4px 0 rgba(74, 68, 83, 0.35)",
+  boxShadow: "0 0 14px rgba(255,225,166, var(--sign-glow, 0)), 4px 4px 0 rgba(74, 68, 83, 0.35)",
   padding: "4px 10px",
   fontFamily: '"Nunito", sans-serif',
   fontWeight: 700,

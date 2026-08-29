@@ -8,17 +8,6 @@ import { BUILDING_META } from "../../civic";
 
 const BANNER_Y = 1.4;
 const TITLE_FLOAT_INTENSITY = 0.35;
-const PIN_SPHERE_Y = 0.6;
-const PIN_SPHERE_R = 0.22;
-const PIN_CONE_Y = 0.85;
-const PIN_CONE_R = 0.16;
-const PIN_CONE_H = 0.3;
-const POLE_OFFSET_Y = 1.4;
-const POLE_HEIGHT = 1.4;
-const POLE_R = 0.02;
-const POLE_SEGMENTS = 6;
-const PIN_COLOR = "#ff5050";
-const PIN_CAP_COLOR = "#ffd54a";
 
 function TitleChip({ title }: { title: string }) {
   const { scale, opacity } = useSpring({
@@ -85,20 +74,6 @@ export function SelectedBanner() {
           <TitleChip key={selectedBuilding ?? selected?.id} title={title} />
         </Html>
       </Float>
-      <Float speed={2.6} rotationIntensity={0} floatIntensity={0.8}>
-        <mesh position={[0, PIN_SPHERE_Y, 0]} castShadow>
-          <sphereGeometry args={[PIN_SPHERE_R, 16, 16]} />
-          <meshStandardMaterial color={PIN_COLOR} />
-        </mesh>
-        <mesh position={[0, PIN_CONE_Y, 0]}>
-          <coneGeometry args={[PIN_CONE_R, PIN_CONE_H, 12]} />
-          <meshStandardMaterial color={PIN_CAP_COLOR} />
-        </mesh>
-      </Float>
-      <mesh position={[0, -POLE_OFFSET_Y, 0]}>
-        <cylinderGeometry args={[POLE_R, POLE_R, POLE_HEIGHT, POLE_SEGMENTS]} />
-        <meshStandardMaterial color="#4a4453" />
-      </mesh>
     </group>
   );
 }

@@ -67,4 +67,22 @@ describe("createHandler", () => {
     expect(res.status).toBe(404);
     expect((await res.json()).error).toBe("not found");
   });
+
+  test("GET /api/session/:id/messages returns the text transcript", async () => {
+    const handler = createHandler(() => makeFixture());
+    const res = await handler(new Request("http://localhost/api/session/s1/messages"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.messages).toHaveLength(1);
+    expect(body.messages[0]).toMatchObject({ id: "m1", role: "user", time: 1700000000000 });
+    expect(body.messages[0].text.replace(/\s+/g, " ").trim()).toBe(
+      "I want a a demo line for the snippet test",
+    );
+  });
+
+  test("GET /api/session/:id/messages returns 404 for unknown session", async () => {
+    const handler = createHandler(() => makeFixture());
+    const res = await handler(new Request("http://localhost/api/session/nope/messages"));
+    expect(res.status).toBe(404);
+  });
 });

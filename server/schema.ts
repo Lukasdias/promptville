@@ -18,11 +18,24 @@ export const session = sqliteTable("session", {
   cost: real("cost").notNull().default(0),
   tokensInput: integer("tokens_input").notNull().default(0),
   tokensOutput: integer("tokens_output").notNull().default(0),
+  tokensReasoning: integer("tokens_reasoning").notNull().default(0),
+  summaryAdditions: integer("summary_additions"),
+  summaryDeletions: integer("summary_deletions"),
   timeCreated: integer("time_created").notNull(),
   timeUpdated: integer("time_updated").notNull(),
   slug: text("slug").notNull(),
   directory: text("directory").notNull(),
   parentId: text("parent_id"),
+});
+
+export const todo = sqliteTable("todo", {
+  sessionId: text("session_id").notNull(),
+  content: text("content").notNull(),
+  status: text("status").notNull(),
+  priority: text("priority").notNull(),
+  position: integer("position").notNull(),
+  timeCreated: integer("time_created").notNull(),
+  timeUpdated: integer("time_updated").notNull(),
 });
 
 export const message = sqliteTable("message", {
