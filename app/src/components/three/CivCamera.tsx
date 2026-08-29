@@ -55,7 +55,10 @@ export function CivCamera() {
   const goal = useRef<CameraState>({ ...DEFAULT_CAMERA });
   const keys = useRef<Set<string>>(new Set());
   const pointer = useRef({ down: false, x: 0, y: 0, startX: 0, startY: 0, lastX: 0, lastY: 0 });
-  const edgeScroll = useRef(true);
+  // Edge-scroll pans when the cursor nears the screen edge WITHOUT any click.
+  // It is the "camera moves when I move the mouse" behaviour, so it defaults to
+  // OFF: the camera should only pan when dragging with button 1.
+  const edgeScroll = useRef(false);
   const helpOpenRef = useRef(helpOpen);
   useEffect(() => {
     helpOpenRef.current = helpOpen;
@@ -141,6 +144,9 @@ export function CivCamera() {
   useEffect(() => {
     const el = gl.domElement;
     const onPointerDown = (e: PointerEvent) => {
+      // Only the primary button (0 = left) starts a drag-pan. Other buttons
+      // (e.g. right-click) must never move the camera.
+      if (e.button !== 0) return;
       setPanActive(false);
       pointer.current = {
         down: true,

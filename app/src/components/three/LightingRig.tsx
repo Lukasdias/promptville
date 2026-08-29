@@ -1,12 +1,17 @@
 import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Color } from "three";
-import type { DirectionalLight, HemisphereLight } from "three";
+import type { AmbientLight, DirectionalLight, HemisphereLight } from "three";
 import { clockRef, nightRef } from "../../night";
 import { skyUniforms } from "./Sky";
 import { daylight, sunDirection, skyPalette } from "../../daynight";
 import { useApp } from "../../store";
-import { SUN_INTENSITY_DAY, HEMI_INTENSITY_DAY, MOON_INTENSITY_NIGHT } from "../../theme";
+import {
+  SUN_INTENSITY_DAY,
+  HEMI_INTENSITY_DAY,
+  MOON_INTENSITY_NIGHT,
+  AMBIENT_NIGHT,
+} from "../../theme";
 
 const SUN_DIST = 30;
 const MOON_DIST = 30;
@@ -21,6 +26,7 @@ export function LightingRig() {
   const sunRef = useRef<DirectionalLight>(null);
   const hemiRef = useRef<HemisphereLight>(null);
   const moonRef = useRef<DirectionalLight>(null);
+  const ambientRef = useRef<AmbientLight>(null);
 
   const auto = useRef(autoCycle);
   useEffect(() => {
@@ -63,6 +69,12 @@ export function LightingRig() {
       moonRef.current.intensity = MOON_INTENSITY_NIGHT * night;
       moonRef.current.position.set(-sun.x * MOON_DIST, -sun.y * MOON_DIST, -sun.z * MOON_DIST);
     }
+    // Ambient floor: day-lit by night. AMBIENT_NIGHT keeps the city readable at
+    // night (roofs, streets, shadows) instead of collapsing to black.
+    if (ambientRef.current) {
+      ambientRef.current.intensity = AMBIENT_NIGHT * night;
+      ambientRef.current.color.set("#3a4560");
+    }
 
     if (scene.fog) scene.fog.color.set(p.fog);
     scene.background = bgColor.current.set(p.top);
@@ -90,6 +102,7 @@ export function LightingRig() {
       />
       <hemisphereLight ref={hemiRef} groundColor="#cfe8b0" />
       <directionalLight ref={moonRef} color="#9fb2d8" />
+      <ambientLight ref={ambientRef} color="#3a4560" />
     </>
   );
 }

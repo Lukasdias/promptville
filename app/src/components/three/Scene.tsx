@@ -22,6 +22,7 @@ import { DustMotes } from "./DustMotes";
 import { GroundFog } from "./GroundFog";
 import { LightingRig } from "./LightingRig";
 import { LitWindows } from "./LitWindows";
+import { HouseNightLights } from "./HouseNightLights";
 
 export function Scene() {
   const {
@@ -57,6 +58,7 @@ export function Scene() {
       <ServiceRing />
       <Signals />
       <LitWindows />
+      <HouseNightLights />
       <World blocks={blocks} streets={renderStreets} />
       <Details blocks={blocks} streets={renderStreets} />
       <CivicDistrict civic={civic} />

@@ -72,6 +72,7 @@ export function TweakPanel() {
           <Group title="Panels">
             <Toggle label="City stats" value={t.showStats} onChange={(v) => setTweak("showStats", v)} />
             <Toggle label="Header" value={t.showHeader} onChange={(v) => setTweak("showHeader", v)} />
+            <Toggle label="Town clock" value={t.showClock} onChange={(v) => setTweak("showClock", v)} />
             <Toggle label="Detail card" value={t.showDetailCard} onChange={(v) => setTweak("showDetailCard", v)} />
             <Toggle label="Hint bar" value={t.showHintBar} onChange={(v) => setTweak("showHintBar", v)} />
             <Toggle label="Roof legend" value={t.showLegend} onChange={(v) => setTweak("showLegend", v)} />

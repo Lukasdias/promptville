@@ -17,6 +17,7 @@ export interface StatsRows {
 export interface Tweaks {
   showStats: boolean;
   showHeader: boolean;
+  showClock: boolean;
   showDetailCard: boolean;
   showHintBar: boolean;
   showLegend: boolean;
@@ -42,6 +43,7 @@ export interface Toast {
 export const DEFAULT_TWEAKS: Tweaks = {
   showStats: true,
   showHeader: true,
+  showClock: true,
   showDetailCard: true,
   showHintBar: true,
   showLegend: false,

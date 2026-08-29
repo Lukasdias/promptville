@@ -33,18 +33,27 @@ function freeIntervals(lo: number, hi: number, spans: [number, number][]): [numb
 }
 
 // Sidewalk + curb box segments along both flanks of every street, split where a
-// crossing street's road cuts through so sidewalk never spans a junction.
+// crossing street cuts through so sidewalk never spans a junction. The gap is
+// widened by the crossing street's own sidewalk band on both sides, otherwise a
+// perpendicular street's walk strip overlaps this one at the corner — two
+// coplanar boxes at the same height z-fight (worst when zoomed out).
 export function sidewalkSegments(streets: Street[]): SideSeg[] {
   const segs: SideSeg[] = [];
 
+  const flankBand = CURB_WIDTH + SIDEWALK_WIDTH;
   for (const s of streets) {
     const horizontal = s.width >= s.depth;
     const roadHalf = horizontal ? s.depth / 2 : s.width / 2;
     const lengthHalf = horizontal ? s.width / 2 : s.depth / 2;
     const crossers = streets.filter((o) => (horizontal ? o.width < o.depth : o.width >= o.depth));
-    const spans = crossers.map<[number, number]>((o) =>
-      horizontal ? [o.x - o.width / 2, o.x + o.width / 2] : [o.z - o.depth / 2, o.z + o.depth / 2],
-    );
+    // Each crossing road's span, widened by BOTH the road's own flank band so
+    // ww exclude the crossing sidewalk strip on each side of its road.
+    const spans = crossers.map<[number, number]>((o) => {
+      const crossRoadHalf = (horizontal ? o.width : o.depth) / 2;
+      return horizontal
+        ? [o.x - crossRoadHalf - flankBand, o.x + crossRoadHalf + flankBand]
+        : [o.z - crossRoadHalf - flankBand, o.z + crossRoadHalf + flankBand];
+    });
     const intervals = freeIntervals(-lengthHalf, lengthHalf, spans);
 
     for (const sign of [-1, 1]) {

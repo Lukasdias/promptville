@@ -10,7 +10,7 @@ export const environment = {
 };
 
 export const traffic = {
-  cars: 5,
+  cars: 16,
   runners: 6,
   walkers: 3,
   visitors: 4,

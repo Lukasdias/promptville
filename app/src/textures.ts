@@ -1,6 +1,6 @@
 import { CanvasTexture, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace } from "three";
 import { mulberry32 } from "./rand";
-import { mottleBlobs, shade, stripeBands } from "./texturePatterns";
+import { mottleBlobs, shade, stripeBands, roundedRectPath, CORNER_RADIUS_REL, OUTLINE_WIDTH_REL } from "./texturePatterns";
 import { COLORS, LAWN_B, STONE_GROUT } from "./theme";
 
 const TILE = 128;
@@ -115,15 +115,32 @@ function paintPark(ctx: CanvasRenderingContext2D): void {
 }
 
 function paintAsphalt(ctx: CanvasRenderingContext2D): void {
+  // Flush flat cartoon charcoal — no heavy noise. A few large, soft light blobs
+  // read as "worn" without turning into grit.
   ctx.fillStyle = COLORS.road;
   ctx.fillRect(0, 0, TILE, TILE);
   const rand = mulberry32(ASPHALT_SEED);
-  for (let i = 0; i < ASPHALT_SPECKLES; i++) {
+  for (const blob of mottleBlobs(TILE, 8, rand)) {
+    ctx.fillStyle = shade(COLORS.road, blob.lighten * 0.6);
+    ctx.globalAlpha = 0.22;
+    drawWrapped(ctx, TILE, (dx, dy) => {
+      ctx.beginPath();
+      ctx.arc(blob.x + dx, blob.y + dy, blob.r * 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+  // A couple of clean pothole-free patches: small darker rounded dabs.
+  for (let i = 0; i < 5; i++) {
     const x = rand() * TILE;
     const y = rand() * TILE;
-    ctx.fillStyle = rand() < 0.5 ? shade(COLORS.road, 0.05) : shade(COLORS.road, -0.07);
-    ctx.fillRect(x, y, 1.5, 1.5);
+    ctx.fillStyle = shade(COLORS.road, -0.09);
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.arc(x, y, 6 + rand() * 6, 0, Math.PI * 2);
+    ctx.fill();
   }
+  ctx.globalAlpha = 1;
 }
 
 function paintStone(ctx: CanvasRenderingContext2D): void {
@@ -159,22 +176,51 @@ function paintStone(ctx: CanvasRenderingContext2D): void {
 }
 
 function paintBrick(ctx: CanvasRenderingContext2D): void {
-  ctx.fillStyle = COLORS.mortar;
-  ctx.fillRect(0, 0, 96, 48);
+  // Cartoon sidewalk: a grid of rounded pastel tiles with dark, crisp grout.
+  // Flat saturated fill + a subtle per-tile tone shift (lightness, not hue).
+  const clearCtx = ctx;
+  clearCtx.fillStyle = COLORS.cream;
+  clearCtx.fillRect(0, 0, 96, 48);
   const rows = 2;
   const cols = 3;
-  const brickH = 48 / rows;
-  const brickW = 96 / cols;
-  const mortar = 3;
-  ctx.fillStyle = COLORS.brick;
+  const tileW = 96 / cols;
+  const tileH = 48 / rows;
+  const radius = Math.min(tileW, tileH) * CORNER_RADIUS_REL;
+  const outline = shade(COLORS.cream, -0.55);
+  const rand = mulberry32(STONE_SEED);
   for (let r = 0; r < rows; r++) {
-    const y = r * brickH;
-    const off = r % 2 === 0 ? 0 : brickW / 2;
     for (let c = 0; c < cols; c++) {
-      const x = c * brickW + off;
-      ctx.fillRect(x, y + mortar / 2, brickW - mortar, brickH - mortar);
+      const x = c * tileW;
+      const y = r * tileH;
+      pastelTile(clearCtx, x + 1, y + 1, tileW - 2, tileH - 2, radius, outline, shade(COLORS.cream, (rand() - 0.5) * 0.08));
     }
   }
+}
+
+// A rounded flat tile with a bold dark outline — the "sticker" read. Only the
+// shape at the tile's own position; edges sit inside the canvas so the tile
+// wraps seamlessly (no line crossing the 96/48 boundary).
+function pastelTile(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  radius: number,
+  outline: string,
+  fill: string,
+): void {
+  const o = Math.min(Math.min(w, h) * OUTLINE_WIDTH_REL, 3);
+  // Outline pass
+  ctx.fillStyle = outline;
+  ctx.beginPath();
+  roundedRectPath(ctx, x - o, y - o, w + o * 2, h + o * 2, radius + o);
+  ctx.fill();
+  // Fill pass
+  ctx.fillStyle = fill;
+  ctx.beginPath();
+  roundedRectPath(ctx, x, y, w, h, radius);
+  ctx.fill();
 }
 
 export const grassTexture = makeTileableTexture(TILE, TILE, paintGrass);

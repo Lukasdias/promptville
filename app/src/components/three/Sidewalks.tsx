@@ -4,6 +4,7 @@ import type { Street } from "../../layout";
 import type { Intersection } from "../../traffic";
 import { sidewalkSegments, SIDEWALK_HEIGHT, CURB_HEIGHT } from "../../sidewalk";
 import { sidewalkMaterialFor } from "../../textures";
+import { shade } from "../../texturePatterns";
 import { buildCrosswalks } from "../../crosswalk";
 import { COLORS, CROSSWALK_BRICK } from "../../theme";
 import { useApp } from "../../store";
@@ -23,7 +24,22 @@ const CROSSWALK_MATERIAL = new MeshStandardMaterial({
   polygonOffsetFactor: -1,
   polygonOffsetUnits: -1,
 });
-const CROSSWALK_TOP = 0.055;
+// Cartoon outline drawn beneath each zebra stripe — a slightly larger darker
+// slab so the stripe reads outlined, sticker-style.
+const CROSSWALK_OUTLINE = new MeshStandardMaterial({
+  color: shade(COLORS.road, -0.4),
+  roughness: 1,
+  polygonOffset: true,
+  polygonOffsetFactor: -1,
+  polygonOffsetUnits: -1,
+});
+// Vertical layering is the fix for the corner flicker: the street slab top is
+// y=0.05, so every overlay sits clearly ABOVE it with a real height gap (not
+// coplanar). Coplanar surfaces z-fight — worst when zoomed out, where the depth
+// buffer has far less precision than the ~0.005 gap these used to share.
+const CROSSWALK_TOP = 0.075;           // stripe surface, well above the road
+const CROSSWALK_OUTLINE_TOP = 0.062;   // outline slab, just beneath the stripe
+const CROSSWALK_OUTLINE_PAD = 0.06;
 
 export function Sidewalks({
   streets,
@@ -69,15 +85,20 @@ export function Sidewalks({
         );
       })}
       {crosswalks.map((c, i) => (
-        <mesh
-          key={`cs${i}`}
-          position={[c.x, CROSSWALK_TOP, c.z]}
-          rotation-x={-Math.PI / 2}
-          material={CROSSWALK_MATERIAL}
-          onClick={clear}
-        >
-          <planeGeometry args={[c.w, c.d]} />
-        </mesh>
+        <group key={`cs${i}`}>
+          {/* Cartoon outline: a slightly larger dark slab just beneath the stripe */}
+          <mesh
+            position={[c.x, CROSSWALK_OUTLINE_TOP, c.z]}
+            rotation-x={-Math.PI / 2}
+            material={CROSSWALK_OUTLINE}
+            onClick={clear}
+          >
+            <planeGeometry args={[c.w + CROSSWALK_OUTLINE_PAD * 2, c.d + CROSSWALK_OUTLINE_PAD * 2]} />
+          </mesh>
+          <mesh position={[c.x, CROSSWALK_TOP, c.z]} rotation-x={-Math.PI / 2} material={CROSSWALK_MATERIAL} onClick={clear}>
+            <planeGeometry args={[c.w, c.d]} />
+          </mesh>
+        </group>
       ))}
     </group>
   );

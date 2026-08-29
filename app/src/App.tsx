@@ -2,6 +2,7 @@ import { Canvas } from "@react-three/fiber";
 import { Scene } from "./components/three/Scene";
 import { CivCamera } from "./components/three/CivCamera";
 import { Header } from "./components/hud/Header";
+import { Clock } from "./components/hud/Clock";
 import { StatsPanel } from "./components/hud/StatsPanel";
 import { DetailCard } from "./components/hud/DetailCard";
 import { HintBar } from "./components/hud/HintBar";
@@ -27,6 +28,7 @@ export default function App() {
         <CivCamera />
       </Canvas>
       <Header />
+      <Clock />
       <NavigatorPanel />
       <ChatSidebar />
       <StatsPanel />

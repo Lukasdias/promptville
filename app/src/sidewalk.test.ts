@@ -50,4 +50,25 @@ describe("sidewalkSegments", () => {
       }
     }
   });
+
+  test("same-kind segments never overlap (prevents corner z-fighting)", () => {
+    // Two perpendicular streets meeting at a junction: their flank strips must
+    // not pile up in the corner square. Coplanar overlapping boxes z-fight,
+    // worst when zoomed out (depth precision), which reads as flicker.
+    const horizontal: Street = { x: 0, z: 0, width: 24, depth: 3.5 };
+    const vertical: Street = { x: 0, z: 0, width: 3.5, depth: 24 };
+    const segs = sidewalkSegments([horizontal, vertical]);
+    for (const kind of ["walk", "curb"] as const) {
+      const same = segs.filter((s) => s.kind === kind);
+      for (let i = 0; i < same.length; i++) {
+        for (let j = i + 1; j < same.length; j++) {
+          const a = same[i];
+          const b = same[j];
+          const ox = Math.min(a.x + a.w / 2, b.x + b.w / 2) - Math.max(a.x - a.w / 2, b.x - b.w / 2);
+          const oz = Math.min(a.z + a.d / 2, b.z + b.d / 2) - Math.max(a.z - a.d / 2, b.z - b.d / 2);
+          expect(ox <= 0.001 || oz <= 0.001).toBe(true);
+        }
+      }
+    }
+  });
 });
