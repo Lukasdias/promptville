@@ -285,12 +285,12 @@ function clampSnippet(t: string): string {
   return t.length > 140 ? `${t.slice(0, 140).trimEnd()}…` : t;
 }
 
-// Short real lines for the crowd NPC chatter bubbles: the most recent user /
-// assistant text parts, cleaned, deduped, and clamped to bubble width. Non-text
-// parts (tools, patches) are naturally excluded by type === "text". Falls back
-// to a tiny seed of cozy lines when the corpus is empty.
+// Short real lines for the crowd NPC chatter bubbles: recent user / assistant
+// text parts, cleaned, deduped, and kept only if short enough to fit a bubble
+// without truncating. Non-text parts (tools, patches) are excluded by
+// type === "text". Falls back to a seed of cozy lines when the corpus is empty.
 const CHATTER_LIMIT = 8;
-const CHATTER_MAX_LEN = 64;
+const CHATTER_MAX_LEN = 60;
 const FALLBACK_CHATTER = ["This town grows every day.", "The plaza is looking nice.", "Nice weather, huh?"];
 
 export function crowdChatter(db: Database): string[] {
@@ -306,11 +306,13 @@ export function crowdChatter(db: Database): string[] {
   for (const p of parts) {
     const t = textFromPart(p.data);
     if (!t) continue;
-    const clean = t.length > CHATTER_MAX_LEN ? `${t.slice(0, CHATTER_MAX_LEN).trimEnd()}…` : t;
-    const key = clean.toLowerCase();
+    // Skip lines that would need truncating — a bubble shows whole short lines,
+    // never a clipped sentence with an ellipsis.
+    if (t.length > CHATTER_MAX_LEN) continue;
+    const key = t.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push(clean);
+    out.push(t);
     if (out.length >= CHATTER_LIMIT) break;
   }
   return out.length > 0 ? out : [...FALLBACK_CHATTER];

@@ -19,7 +19,17 @@ const FALLBACK_LINES = [
   "This town grows every day.",
 ];
 
-function Bubble({ seed, anchor, lines }: { seed: number; anchor: { x: number; z: number }; lines: string[] }) {
+function Bubble({
+  seed,
+  anchor,
+  lines,
+  timeOffset,
+}: {
+  seed: number;
+  anchor: { x: number; z: number };
+  lines: string[];
+  timeOffset: number;
+}) {
   // Pick a starting line, then advance to the next real snippet each cycle so a
   // bubble cycles through the actual chatter instead of sticking on one quote.
   const [idx, setIdx] = useState(seed % lines.length);
@@ -28,11 +38,14 @@ function Bubble({ seed, anchor, lines }: { seed: number; anchor: { x: number; z:
   const t = useRef(0);
   useFrame((_, delta) => {
     t.current += delta;
+    // Stagger each cluster's clock so two groups never show the same line at the
+    // same time (otherwise they advance in lockstep and repeat each other).
     const cycle = crowd.bubbleDuration + crowd.quietDuration;
-    const on = (t.current % cycle) < crowd.bubbleDuration;
+    const local = t.current + timeOffset;
+    const on = (local % cycle) < crowd.bubbleDuration;
     if (on !== visible) setVisible(on);
     // On each new visible window, step to the next line (cycles back).
-    const next = on ? Math.floor(t.current / cycle) % lines.length : idx;
+    const next = on ? Math.floor(local / cycle) % lines.length : idx;
     if (next !== idx) setIdx(next);
   });
   return (
@@ -45,15 +58,15 @@ function Bubble({ seed, anchor, lines }: { seed: number; anchor: { x: number; z:
               border: "3px solid #4a4453",
               borderRadius: 12,
               boxShadow: "4px 4px 0 rgba(74,68,83,0.35)",
-              padding: "5px 10px",
+              padding: "8px 14px",
               fontFamily: '"Nunito", sans-serif',
               fontWeight: 700,
-              fontSize: 12,
+              fontSize: 14,
+              lineHeight: 1.35,
               color: "#4a4453",
-              whiteSpace: "nowrap",
-              maxWidth: 220,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
+              whiteSpace: "normal",
+              maxWidth: 240,
+              textAlign: "center",
             }}
           >
             {lines[idx % lines.length]}
@@ -70,9 +83,11 @@ export function Crowd() {
   const { data } = useNeighborhood();
   const layout = useMemo(() => crowdLayout(blocks, renderStreets), [blocks, renderStreets]);
 
-  // Real short lines from the opencode DB; fall back to the cozy pool when empty.
+  // Real short lines from the opencode DB, filtered to bubble-length snippets so
+  // a bubble never shows dangling ellipsis. Fall back to the cozy pool when empty.
   const lines = useMemo(() => {
-    const fromDb = data?.chatter ?? [];
+    const SHORT = 60;
+    const fromDb = (data?.chatter ?? []).filter((l) => l.length <= SHORT);
     const pool = fromDb.length > 0 ? fromDb : FALLBACK_LINES;
     return pool.length > 0 ? pool : FALLBACK_LINES;
   }, [data]);
@@ -98,7 +113,13 @@ export function Crowd() {
         <InstancedVoxels key={shirt} voxels={voxels} voxelSize={PERSON_SIZE} />
       ))}
       {layout.clusters.filter((c) => c.talking).map((c, i) => (
-        <Bubble key={i} seed={i * 7 + 1} anchor={c.anchor} lines={lines} />
+        <Bubble
+          key={i}
+          seed={i * 3 + 17}
+          anchor={c.anchor}
+          lines={lines}
+          timeOffset={i * ((crowd.bubbleDuration + crowd.quietDuration) / 2)}
+        />
       ))}
     </group>
   );
