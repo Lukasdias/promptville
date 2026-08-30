@@ -49,7 +49,18 @@ Open http://localhost:5173. The API reads `~/.local/share/opencode/opencode.db` 
 server/   Bun.serve API + Drizzle ORM over bun:sqlite (read-only)
 app/      Vite + React 19 + React Three Fiber frontend
 docs/     design specs, implementation plans, R3F reference
+screenshots/  example captures of the running town
 ```
+
+## Screenshots
+
+| Capture | Shows |
+|---------|-------|
+| ![daytime aerial view](screenshots/daytime-aerial-view.png) | Daytime town: city blocks, plaza, civic buildings, stats panel |
+| ![night navigator](screenshots/night-navigator.png) | Session navigator open over the night scene |
+| ![feature bubble](screenshots/night-navigator-bubble.png) | Crowd bubble called out near the plaza |
+| ![tweak panel](screenshots/tweak-panel.png) | Tweak display panel and time-of-day slider |
+| ![session chat detail](screenshots/session-chat-detail.png) | Chat sidebar and session detail card for a house |
 
 ## API
 
