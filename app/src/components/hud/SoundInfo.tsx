@@ -45,8 +45,8 @@ export function SoundInfo() {
         <p className="mt-2 text-sm">
           The background music is from{" "}
           <strong>Animal Crossing: New Horizons</strong> —{" "}
-          <strong>“5 p.m. (Sunny Weather)”</strong> during the day, and{" "}
-          <strong>“5 a.m.”</strong> at night.
+          <strong>“5 a.m.”</strong> during the day, and{" "}
+          <strong>“5 p.m. (Sunny Weather)”</strong> at night.
         </p>
         <p className="mt-2 text-sm opacity-80">
           The Animal Crossing series and all related content are the property of{" "}
@@ -58,7 +58,7 @@ export function SoundInfo() {
         </p>
         <p className="mt-2 break-all rounded-lg bg-ink/5 p-2 text-xs font-mono opacity-70">
           khinsider.com · Animal Crossing: New Horizons (2020 Switch) gamerip ·
-          “5 p.m. (Sunny Weather)” · “5 a.m.”
+          “5 a.m.” · “5 p.m. (Sunny Weather)”
         </p>
       </div>
     </animated.div>
