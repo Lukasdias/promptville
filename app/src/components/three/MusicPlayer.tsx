@@ -15,6 +15,8 @@ function blendFor(t: number): number {
 
 // How long after the startup SFX before the world OST fades in.
 const OST_DELAY_MS = 1000;
+// Startup sting volume (0..1) — tuned down so it doesn't blast like the OST.
+const SFX_VOLUME = 0.5;
 
 // Global (non-positional) background music for Promptville. Mounted INSIDE the
 // Canvas because it uses useThree/useFrame/useLoader.
@@ -116,7 +118,11 @@ export function MusicPlayer() {
 
     void ready.then(() => {
       const sfx = sfxRef.current;
-      if (sfx) sfx.play();
+      if (sfx) {
+        // Startup sting plays at reduced volume so it doesn't blast.
+        sfx.setVolume(SFX_VOLUME);
+        sfx.play();
+      }
     });
     window.setTimeout(() => {
       if (ostStartedRef.current) return;
