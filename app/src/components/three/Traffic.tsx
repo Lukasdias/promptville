@@ -327,12 +327,20 @@ function WaypointCar({
     }
 
     // Replan when we arrive at the end of the current route. Always start from
-    // the car's actual node so the next leg is contiguous.
+    // the car's actual node so the next leg is contiguous. planRoute can return a
+    // single-node route when start === goal or no path exists — that has no
+    // second node to drive to, so re-pick a destination until we get a real edge.
     if (route.current.length === 0 || routeIdx.current >= route.current.length) {
-      const goal = pickDestination(curbNodeIds, graph.nodes.length, Math.random);
-      route.current = planRoute(graph, currentNode.current, goal);
+      let attempt = 0;
+      do {
+        const goal = pickDestination(curbNodeIds, graph.nodes.length, Math.random);
+        route.current = planRoute(graph, currentNode.current, goal);
+        attempt++;
+      } while (route.current.length < 2 && attempt < 16);
       routeIdx.current = 1;
       t.current = 0;
+      // Still no path this iteration: nothing to drive to, wait a frame.
+      if (route.current.length < 2) return;
     }
 
     const a = graph.nodes[route.current[routeIdx.current - 1]];
@@ -383,6 +391,9 @@ function WaypointCar({
     if (t.current >= 1) {
       routeIdx.current += 1;
       t.current -= 1;
+      // A fast car on a short segment can overshoot more than one node; clamp so
+      // the position interpolator never extrapolates beyond the segment.
+      t.current = Math.min(t.current, 0.999);
       // We just arrived at node b of the current segment — track it so the next
       // plan starts here (no teleport).
       currentNode.current = b.id;
