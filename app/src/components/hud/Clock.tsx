@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { animated, useSpring } from "@react-spring/web";
 import { useApp } from "../../store";
 
 const NUMERALS = [
@@ -30,18 +29,25 @@ function angleFor(h: number, m: number, s: number) {
 export function Clock() {
   const show = useApp((s) => s.tweaks.showClock);
   const [now, setNow] = useState(() => new Date());
+  // Pendulum swings on a continuous sine loop — deterministic and even, with no
+  // spring overshoot/catch. (A `useSpring` with `loop: reverse` fights its own
+  // stiffness and staggers at the extremes.)
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const { angle } = useSpring({
-    from: { angle: -11 },
-    to: { angle: 11 },
-    loop: { reverse: true },
-    config: { tension: 240, friction: 12 },
-  });
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 40);
+    return () => clearInterval(id);
+  }, []);
+
+  // Smooth sine: angle = sin(phase) * amplitude. At 25 ticks/sec this is a
+  // gentle, continuous swing from -11° to +11°.
+  const phase = (tick * 40) / 1000;
+  const angle = Math.sin(phase * 1.4) * 11;
 
   if (!show) return null;
 
@@ -133,16 +139,16 @@ export function Clock() {
 
           <div className="mt-1.5">
             <div className="mx-auto flex h-12 w-14 flex-col items-center rounded-b-2xl rounded-t-md border-[3px] border-b-0 border-ink bg-[#5b4633] p-1">
-              <animated.div
+              <div
                 className="flex flex-col items-center"
                 style={{
-                  transform: angle.to((a) => `rotate(${a}deg)`),
+                  transform: `rotate(${angle}deg)`,
                   transformOrigin: "top center",
                 }}
               >
                 <div className="h-9 w-0.5 bg-[#e8c885]" />
                 <div className="mt-0.5 h-3.5 w-3.5 rounded-full border-2 border-ink bg-amber-300 shadow-[2px_2px_0_rgba(74,68,83,0.3)]" />
-              </animated.div>
+              </div>
             </div>
           </div>
         </div>

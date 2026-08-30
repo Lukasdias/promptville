@@ -23,6 +23,8 @@ import { GroundFog } from "./GroundFog";
 import { LightingRig } from "./LightingRig";
 import { LitWindows } from "./LitWindows";
 import { HouseNightLights } from "./HouseNightLights";
+import { Crowd } from "./Crowd";
+import { MusicPlayer } from "./MusicPlayer";
 
 export function Scene() {
   const {
@@ -49,6 +51,7 @@ export function Scene() {
       <DustMotes />
       <GroundFog />
       <LightingRig />
+      <MusicPlayer />
       <fog attach="fog" args={["#aee6ff", 40, 120]} />
       <Terrain extent={extent} bounds={bounds} />
       <Ground blocks={blocks} />
@@ -63,6 +66,7 @@ export function Scene() {
       <Details blocks={blocks} streets={renderStreets} />
       <CivicDistrict civic={civic} />
       <People />
+      <Crowd />
       <Traffic
         streets={renderStreets}
         intersections={intersections}

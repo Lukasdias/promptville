@@ -8,8 +8,9 @@ import { DetailCard } from "./components/hud/DetailCard";
 import { HintBar } from "./components/hud/HintBar";
 import { HelpPanel } from "./components/hud/HelpPanel";
 import { TweakPanel } from "./components/hud/TweakPanel";
+import { SoundInfo } from "./components/hud/SoundInfo";
 import { LegendCard } from "./components/hud/LegendCard";
-import { LoadingState } from "./components/hud/LoadingState";
+import { Splash } from "./components/hud/Splash";
 import { MissingState } from "./components/hud/MissingState";
 import { Toasts } from "./components/hud/Toasts";
 import { ChatSidebar } from "./components/hud/ChatSidebar";
@@ -35,10 +36,11 @@ export default function App() {
       <DetailCard />
       <HintBar />
       <HelpPanel />
+      <SoundInfo />
       <TweakPanel />
       <LegendCard />
       <Toasts />
-      <LoadingState />
+      <Splash />
       <MissingState />
     </div>
   );

@@ -100,6 +100,10 @@ interface AppState {
   setTimeOfDay: (hours: number) => void;
   autoCycle: boolean;
   toggleAutoCycle: () => void;
+  musicOn: boolean;
+  toggleMusic: () => void;
+  soundInfoOpen: boolean;
+  toggleSoundInfo: () => void;
   chatOpen: boolean;
   closeChat: () => void;
 }
@@ -171,6 +175,13 @@ export const useApp = create<AppState>()(
       },
       autoCycle: true,
       toggleAutoCycle: () => set((s) => ({ autoCycle: !s.autoCycle })),
+      // Starts silent. The loading splash shows an explicit "enable sound"
+      // button whose click grants browser audio permission and flips this true;
+      // the header button is a mute toggle afterwards.
+      musicOn: false,
+      toggleMusic: () => set((s) => ({ musicOn: !s.musicOn })),
+      soundInfoOpen: false,
+      toggleSoundInfo: () => set((s) => ({ soundInfoOpen: !s.soundInfoOpen })),
       chatOpen: false,
       closeChat: () => set({ chatOpen: false }),
     }),
