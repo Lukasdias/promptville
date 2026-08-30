@@ -30,8 +30,11 @@ export function MusicPlayer() {
   const { data } = useNeighborhood();
   const loaded = Boolean(data);
 
-  const dayBuffer = useLoader(AudioLoader, "/day-ost.mp3");
-  const nightBuffer = useLoader(AudioLoader, "/night-ost.mp3");
+  // Day plays the "5 a.m." track, night plays the "5 p.m." track. (The raw
+  // files were the other way around — PM in day-ost, AM in night-ost — so we
+  // load the paired buffers swapped here.)
+  const dayBuffer = useLoader(AudioLoader, "/night-ost.mp3");
+  const nightBuffer = useLoader(AudioLoader, "/day-ost.mp3");
   const sfxBuffer = useLoader(AudioLoader, "/start-up-sound.mp3");
 
   const dayRef = useRef<Audio | null>(null);
