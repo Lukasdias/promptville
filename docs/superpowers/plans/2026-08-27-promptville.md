@@ -4,7 +4,7 @@
 
 **Goal:** Build Promptville, a local-only 3D web app visualizing opencode history as a low-poly cartoon toy town, with a Bun API server reading the opencode sqlite database and a React Three Fiber frontend.
 
-**Architecture:** Monorepo with two Bun workspaces: `server/` (Bun.serve + `bun:sqlite`, read-only, exposes `GET /api/neighborhood`) and `app/` (Vite + React 19 + R3F). The frontend fetches the aggregated JSON, lays out projects as city blocks and sessions as houses, and renders a pastel low-poly town with a paper-style HUD. Design spec: `docs/superpowers/specs/2026-08-27-opencode-city-3d-design.md`. R3F patterns: `docs/r3f-reference.md`.
+**Architecture:** Monorepo with two Bun workspaces: `server/` (Bun.serve + `bun:sqlite`, read-only, exposes `GET /api/neighborhood`) and `app/` (Vite + React 19 + R3F). The frontend fetches the aggregated JSON, lays out projects as city blocks and sessions as houses, and renders a pastel low-poly town with a paper-style HUD. Design spec: `docs/superpowers/specs/2026-08-27-promptville-3d-design.md`. R3F patterns: `docs/r3f-reference.md`.
 
 **Tech Stack:** Bun 1.3+, `bun:sqlite`, Bun.serve, Vite 8, React 19, TypeScript, `@react-three/fiber` 9, `@react-three/drei` 10, `three` 0.185, Zustand 5, Tailwind CSS 4, `@fontsource/fredoka`, `@fontsource/nunito`, `concurrently`.
 
@@ -1886,7 +1886,7 @@ Open http://localhost:5173. The API reads the opencode sqlite database
 ## Notes
 
 - 3D: React Three Fiber + drei + three. Patterns: `docs/r3f-reference.md`.
-- Spec: `docs/superpowers/specs/2026-08-27-opencode-city-3d-design.md`.
+- Spec: `docs/superpowers/specs/2026-08-27-promptville-3d-design.md`.
 ```
 
 - [ ] **Step 2: Full build + tests**

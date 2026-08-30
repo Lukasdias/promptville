@@ -21,7 +21,7 @@ Status: Draft
 ## Architecture
 
 ```
-opencode-city/
+promptville/
   server/
     index.ts        # Bun.serve API
     db.ts           # bun:sqlite read-only access + queries
@@ -53,7 +53,7 @@ opencode-city/
     api.test.ts
   docs/
     r3f-reference.md
-    superpowers/specs/2026-08-27-opencode-city-3d-design.md
+    superpowers/specs/2026-08-27-promptville-3d-design.md
 ```
 
 ## Data & API

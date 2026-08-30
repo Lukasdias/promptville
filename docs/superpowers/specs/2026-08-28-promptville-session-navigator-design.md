@@ -18,7 +18,7 @@ Goals (all four, from brainstorming):
 
 ## Stack
 
-Unchanged from `2026-08-27-opencode-city-3d-design.md` (Bun + Drizzle read-only server, Vite + React 19 + R3F, TanStack Query v5, Zustand for UI state). This work adds no dependencies.
+Unchanged from `2026-08-27-promptville-3d-design.md` (Bun + Drizzle read-only server, Vite + React 19 + R3F, TanStack Query v5, Zustand for UI state). This work adds no dependencies.
 
 ## Architecture
 

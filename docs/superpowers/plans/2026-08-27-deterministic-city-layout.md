@@ -15,7 +15,7 @@
 - House slot *positions* are keyed by time-ordered index and fixed `HOUSE_COLS`; appending a session must not move existing houses.
 - Block position is a pure function of the project set; `layoutCity(projects, opts)` with identical input must return byte-identical output (determinism — no `Math.random`, all RNG via seeded `mulberry32` in `app/src/rand.ts`).
 - `buildStreets(blocks)` keeps its signature `(blocks: PlacedBlock[]) => Street[]`; `Street.width >= depth` means a horizontal (x-axis) avenue.
-- All UI copy in English. Read `docs/superpowers/specs/2026-08-27-opencode-city-3d-design.md` for tone.
+- All UI copy in English. Read `docs/superpowers/specs/2026-08-27-promptville-3d-design.md` for tone.
 - Run `bun run typecheck`, `bun test`, `bun run build` after each task.
 
 ---
