@@ -8,6 +8,7 @@ import { DetailCard } from "./components/hud/DetailCard";
 import { HintBar } from "./components/hud/HintBar";
 import { HelpPanel } from "./components/hud/HelpPanel";
 import { TweakPanel } from "./components/hud/TweakPanel";
+import { SoundInfo } from "./components/hud/SoundInfo";
 import { LegendCard } from "./components/hud/LegendCard";
 import { Splash } from "./components/hud/Splash";
 import { MissingState } from "./components/hud/MissingState";
@@ -35,6 +36,7 @@ export default function App() {
       <DetailCard />
       <HintBar />
       <HelpPanel />
+      <SoundInfo />
       <TweakPanel />
       <LegendCard />
       <Toasts />

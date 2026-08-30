@@ -102,6 +102,8 @@ interface AppState {
   toggleAutoCycle: () => void;
   musicOn: boolean;
   toggleMusic: () => void;
+  soundInfoOpen: boolean;
+  toggleSoundInfo: () => void;
   chatOpen: boolean;
   closeChat: () => void;
 }
@@ -178,6 +180,8 @@ export const useApp = create<AppState>()(
       // the header button is a mute toggle afterwards.
       musicOn: false,
       toggleMusic: () => set((s) => ({ musicOn: !s.musicOn })),
+      soundInfoOpen: false,
+      toggleSoundInfo: () => set((s) => ({ soundInfoOpen: !s.soundInfoOpen })),
       chatOpen: false,
       closeChat: () => set({ chatOpen: false }),
     }),

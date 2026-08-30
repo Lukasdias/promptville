@@ -1,5 +1,5 @@
 import { animated, useSpring } from "@react-spring/web";
-import { List, Music, Settings, Sun } from "lucide-react";
+import { Info, List, Music, Settings, Sun } from "lucide-react";
 import { Tooltip } from "../ui/Tooltip";
 import { useApp } from "../../store";
 
@@ -9,6 +9,7 @@ export function Header() {
   const showHeader = useApp((s) => s.tweaks.showHeader);
   const musicOn = useApp((s) => s.musicOn);
   const toggleMusic = useApp((s) => s.toggleMusic);
+  const toggleSoundInfo = useApp((s) => s.toggleSoundInfo);
   const { opacity, y } = useSpring({
     from: { opacity: 0, y: -18 },
     to: { opacity: 1, y: 0 },
@@ -48,6 +49,16 @@ export function Header() {
           }`}
         >
           <Music size={20} />
+        </button>
+      </Tooltip>
+      <Tooltip label="Soundtrack credits">
+        <button
+          type="button"
+          onClick={toggleSoundInfo}
+          aria-label="Soundtrack credits"
+          className="pointer-events-auto ml-1 grid h-10 w-10 place-items-center rounded-full border-[3px] border-ink bg-cream text-ink transition-all duration-150 hover:-translate-y-0.5 hover:bg-amber-200 hover:shadow-[4px_4px_0_rgba(74,68,83,0.4)] active:translate-y-0 active:shadow-[1px_1px_0_rgba(74,68,83,0.4)]"
+        >
+          <Info size={20} />
         </button>
       </Tooltip>
       <Tooltip label="Tweak display (P)">
