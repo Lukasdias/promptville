@@ -1,27 +1,27 @@
 # Promptville
 
-Promptville is a local-only 3D visualization of your opencode history, rendered as a low-poly cartoon toy town. Every opencode **project** becomes a city block; every **session** becomes a house. Houses encode your work at a glance:
+A local-only 3D visualization of your opencode history, rendered as a low-poly cartoon town. Each opencode project becomes a city block; each session becomes a house.
 
-- **Height** scales with token usage (bigger house = more tokens)
-- **Roof color** encodes the model; the body color identifies the project
-- **Layout is deterministic**: projects are ranked by activity (session count, then recency) and placed on a fixed grid around a central plaza — the most active project always occupies the lane north of the plaza. House slots use fixed columns, so adding a session never moves existing houses.
-- A cartoon HUD shows aggregate stats: total cost, tokens, top models, top projects.
+- Height scales with token usage.
+- Roof color encodes the model; body color identifies the project.
+- Layout is deterministic: projects are ranked by activity (session count, then recency) and placed on a fixed grid around a central plaza. House slots use fixed columns, so adding a session never moves existing houses.
+- A HUD shows total cost, tokens, top models, and top projects.
 
-The scene is built with React Three Fiber and reads the opencode sqlite database **read-only** through a small Bun API server. Data is live from your local database — refresh the page to re-fetch.
+Built with React Three Fiber. Reads the opencode SQLite database read-only through a Bun API server. Data is live from the local database; refresh to re-fetch.
 
 ## Features
 
-- Procedural low-poly town: street graph with sidewalks and crosswalks, grass lots, an environmental dressing pass (trees, lamps, bushes, flowers), and a mountain ring boundary.
-- **Day/night cycle**: sky gradient, sun/moon lighting, warm window and lamp glow at night, moving rain/dust/fog layers, and a clock + auto-cycle toggle.
-- **Traffic**: cars and pedestrians flow along the street graph with signal-controlled intersections and crosswalks.
-- **Crowd**: NPC clusters on the plaza with speech bubbles whose lines are sourced from real, recent user/assistant messages in your database.
-- **Civic district**: public buildings (hospital, police, fire station, mall, bakery, pet shop) with their own visitor and vehicle activity ring.
-- **Session navigator**: search, filter (project / model / agent / date), and sort sessions; a chat sidebar shows the selected session's message transcript.
-- **Audio**: day/night crossfading soundtrack with a mute toggle and attribution panel; playback starts after an explicit click on the loading splash.
-- **Tweak panel**: toggle scene layers (buildings, traffic, people, scenery, clouds, rain, dust, fog, signals, mountains) and choose which stats rows show.
+- Procedural town: street graph with sidewalks and crosswalks, grass lots, trees/lamps/bushes/flowers, and a mountain ring boundary.
+- Day/night cycle: sky gradient, sun/moon lighting, warm window and lamp glow at night, rain/dust/fog layers, clock and auto-cycle toggle.
+- Traffic: cars and pedestrians follow the street graph with signal-controlled intersections and crosswalks.
+- Crowd: NPC clusters on the plaza with speech bubbles sourced from recent user/assistant messages in your database.
+- Civic district: hospital, police, fire station, mall, bakery, and pet shop, each with a visitor and vehicle activity ring.
+- Session navigator: search, filter (project / model / agent / date), and sort sessions; a chat sidebar shows the selected session's transcript.
+- Audio: day/night crossfading soundtrack, mute toggle, attribution panel. Playback starts after a click on the loading splash.
+- Tweak panel: toggle scene layers (buildings, traffic, people, scenery, clouds, rain, dust, fog, signals, mountains) and choose which stats rows show.
 - Interactive houses: hover to highlight, click for a detail card (title, model, agent, cost, tokens, date) with a floating title banner.
 - Paper-style HUD: Fredoka + Nunito, pastel palette.
-- `frameloop="always"` (the town animates continuously) with shared geometries and instanced voxels.
+- `frameloop="always"` (continuous animation) with shared geometries and instanced voxels.
 
 ## Requirements
 
@@ -34,7 +34,7 @@ bun install
 bun run dev
 ```
 
-Open http://localhost:5173. The API reads `~/.local/share/opencode/opencode.db` (falling back to `~/.opencode/opencode.db`) read-only. Point at another database with `OPENCODE_DB_PATH`.
+Open http://localhost:5173. The API reads `~/.local/share/opencode/opencode.db` (falls back to `~/.opencode/opencode.db`) read-only. Point at another database with `OPENCODE_DB_PATH`.
 
 ## Scripts
 
@@ -46,9 +46,9 @@ Open http://localhost:5173. The API reads `~/.local/share/opencode/opencode.db` 
 ## Project layout
 
 ```
-server/   Bun.serve API + Drizzle ORM over bun:sqlite (read-only)
-app/      Vite + React 19 + React Three Fiber frontend
-docs/     design specs, implementation plans, R3F reference
+server/       Bun.serve API + Drizzle ORM over bun:sqlite (read-only)
+app/          Vite + React 19 + React Three Fiber frontend
+docs/         design specs, implementation plans, R3F reference
 screenshots/  example captures of the running town
 ```
 
@@ -76,5 +76,5 @@ screenshots/  example captures of the running town
 
 ## Notes
 
-- Reads the opencode database read-only — it never mutates your data.
-- Local only by design: no deployment, no auth, no real-time updates.
+- Reads the opencode database read-only; never mutates your data.
+- Local only: no deployment, no auth, no real-time updates.
